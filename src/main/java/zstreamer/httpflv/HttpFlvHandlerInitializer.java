@@ -3,6 +3,7 @@ package zstreamer.httpflv;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.handler.codec.http.HttpServerCodec;
+import zstreamer.Config;
 
 import java.net.InetSocketAddress;
 
@@ -17,7 +18,7 @@ public class HttpFlvHandlerInitializer extends ChannelInboundHandlerAdapter {
         if (ctx.channel().localAddress() instanceof InetSocketAddress) {
             InetSocketAddress address = (InetSocketAddress) ctx.channel().localAddress();
             int port = address.getPort();
-            if (port == 1936) {
+            if (port == Config.HTTP_FLV_PORT) {
                 initMessageHandlers(ctx);
                 ctx.pipeline().remove(this.getClass());
             }

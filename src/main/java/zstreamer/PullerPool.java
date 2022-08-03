@@ -42,17 +42,21 @@ public class PullerPool {
         @Override
         public void run() {
             while (!Thread.interrupted()) {
-                int cnt = 0;
-                for (Audience audience : AUDIENCES) {
-                    cnt += audience.pollMessage();
-                    //如果该观众已经从直播间去除了，就从链表中删除
-                    if (audience.closed()) {
-                        AUDIENCES.remove(audience);
+                try {
+                    int cnt = 0;
+                    for (Audience audience : AUDIENCES) {
+                        cnt += audience.pullMessage();
+                        //如果该观众已经从直播间去除了，就从链表中删除
+                        if (audience.closed()) {
+                            AUDIENCES.remove(audience);
+                        }
                     }
-                }
-                //如果当前没有推成功一个流，就阻塞住
-                if (cnt == 0) {
-                    LockSupport.park();
+                    //如果当前没有推成功一个流，就阻塞住
+                    if (cnt == 0) {
+                        LockSupport.park();
+                    }
+                } catch (Exception e) {
+                    //打印日志
                 }
             }
         }

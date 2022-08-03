@@ -30,8 +30,8 @@ public class Server {
                     }
                 });
         try {
-            ChannelFuture channelFuture1 = server.bind(new InetSocketAddress("192.168.1.103", 1935)).sync();
-            ChannelFuture channelFuture2 = server.bind(new InetSocketAddress("192.168.1.103", 1936)).sync();
+            ChannelFuture channelFuture1 = server.bind(new InetSocketAddress(Config.RTMP_PORT)).sync();
+            ChannelFuture channelFuture2 = server.bind(new InetSocketAddress(Config.HTTP_FLV_PORT)).sync();
             channelFuture1.channel().closeFuture().sync();
             channelFuture2.channel().closeFuture().sync();
         } finally {

@@ -2,6 +2,7 @@ package zstreamer.rtmp;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import zstreamer.Config;
 import zstreamer.rtmp.chunk.ChunkCodec;
 import zstreamer.rtmp.handshake.RtmpHandShaker;
 import zstreamer.rtmp.message.codec.RtmpMessageDecoder;
@@ -17,7 +18,7 @@ public class RtmpHandlerInitializer extends ChannelInboundHandlerAdapter {
         if (ctx.channel().localAddress() instanceof InetSocketAddress) {
             InetSocketAddress address = (InetSocketAddress) ctx.channel().localAddress();
             int port = address.getPort();
-            if (port == 1935) {
+            if (port == Config.RTMP_PORT) {
                 initMessageHandlers(ctx);
                 ctx.pipeline().remove(this.getClass());
             }

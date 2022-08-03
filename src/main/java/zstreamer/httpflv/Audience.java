@@ -32,7 +32,7 @@ public class Audience {
      *
      * @return 返回1表明拉到了，0表示没拉到
      */
-    public int pollMessage() {
+    public int pullMessage() {
         if (now != null && now.getMessage() != null) {
             if (basicTimeStamp == -1) {
                 writeBasic(now);
@@ -46,7 +46,7 @@ public class Audience {
         } else if (last != null && last.hasNext()) {
             //这个分支是为了处理上一次拉流时 now.next = null的情况
             now = last.getNext();
-            return pollMessage();
+            return pullMessage();
         }
         return 0;
     }
@@ -63,18 +63,18 @@ public class Audience {
         FlvHeader header = new FlvHeader((byte) 1, (byte) 1);
         channel.writeAndFlush(header.generateHeader());
 
-        FlvTag scriptTag = new FlvTag(now.getMetaData());
+        FlvTag scriptTag = new FlvTag(node.getMetaData());
         channel.writeAndFlush(scriptTag.generateTag());
 
-        FlvTag avc = new FlvTag(now.getAvcSequenceHeader(), now.getAvcSequenceHeader().getTimeStamp());
+        FlvTag avc = new FlvTag(node.getAvcSequenceHeader(), node.getAvcSequenceHeader().getTimeStamp());
         channel.writeAndFlush(avc.generateTag());
 
-        FlvTag aac = new FlvTag(now.getAacSequenceHeader(), node.getAacSequenceHeader().getTimeStamp());
+        FlvTag aac = new FlvTag(node.getAacSequenceHeader(), node.getAacSequenceHeader().getTimeStamp());
         channel.writeAndFlush(aac.generateTag());
 
         //由于sei信息不是必须的，所以要判空
         if (now.getSei() != null) {
-            FlvTag sei = new FlvTag(now.getSei(), node.getSei().getTimeStamp());
+            FlvTag sei = new FlvTag(node.getSei(), node.getSei().getTimeStamp());
             channel.writeAndFlush(sei.generateTag());
         }
     }

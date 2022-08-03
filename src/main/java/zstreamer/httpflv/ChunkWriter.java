@@ -1,6 +1,7 @@
 package zstreamer.httpflv;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOutboundHandlerAdapter;
@@ -40,8 +41,7 @@ public class ChunkWriter extends ChannelOutboundHandlerAdapter {
                 int bodySize = Integer.min(restBytes, CHUNK_SIZE);
 
                 String header = Integer.toHexString(bodySize);
-
-                ByteBuf out = Unpooled.buffer(bodySize + header.length() + 2 * SPLITTER.length());
+                ByteBuf out = PooledByteBufAllocator.DEFAULT.directBuffer(bodySize + header.length() + 2 * SPLITTER.length());
                 out.writeBytes(header.getBytes(StandardCharsets.US_ASCII));
                 out.writeBytes(SPLITTER.getBytes(StandardCharsets.US_ASCII));
                 out.writeBytes(bytes, idx, bodySize);

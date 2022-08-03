@@ -70,21 +70,23 @@ public class ChunkDecoder {
      * @param chunkHeader 分片信息，即basicHeader
      * @throws Exception 在byte不足时抛出异常
      */
-    public void decodeMessageHead(ByteBuf in, RawMessage profile, ChunkHeader chunkHeader) throws Exception {
+    public RawMessage decodeMessageHead(ByteBuf in, RawMessage profile, ChunkHeader chunkHeader) throws Exception {
+        RawMessage newProfile = new RawMessage(profile, false, 0);
         switch (chunkHeader.getType()) {
             case 0:
-                decodeMessageHead0(in, profile);
+                decodeMessageHead0(in, newProfile);
                 break;
             case 1:
-                decodeMessageHead1(in, profile);
+                decodeMessageHead1(in, newProfile);
                 break;
             case 2:
-                decodeMessageHead2(in, profile);
+                decodeMessageHead2(in, newProfile);
                 break;
             default:
                 //type3用在同一个message分成多个片的情况下，直接合并多个chunk，所以不用解header
                 break;
         }
+        return newProfile;
     }
 
     /**

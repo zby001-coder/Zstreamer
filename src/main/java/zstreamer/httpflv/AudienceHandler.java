@@ -6,7 +6,6 @@ import io.netty.handler.codec.http.*;
 import zstreamer.MediaMessagePool;
 import zstreamer.PullerPool;
 
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author 张贝易
@@ -31,6 +30,7 @@ public class AudienceHandler extends SimpleChannelInboundHandler<HttpRequest> {
             response.headers().set("Content-Type", "video/x-flv");
             response.headers().set("Transfer-Encoding", "chunked");
             response.headers().set("Connection", "Keep-Alive");
+            response.headers().set("Access-Control-Allow-Origin", "*");
 
             ctx.writeAndFlush(response);
 
@@ -44,7 +44,7 @@ public class AudienceHandler extends SimpleChannelInboundHandler<HttpRequest> {
 
     @Override
     public void channelUnregistered(ChannelHandlerContext ctx) throws Exception {
-        if (audience!=null){
+        if (audience != null) {
             audience.onLeave();
         }
         super.channelUnregistered(ctx);

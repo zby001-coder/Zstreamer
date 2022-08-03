@@ -78,6 +78,17 @@ public class MediaMessagePool {
         throw new Exception("Room Doesnt Exist!");
     }
 
+    public static Node pullTailMessage(String roomName) throws Exception {
+        if (hasRoom(roomName)) {
+            MediaStream mediaStream = POOL.get(roomName);
+            //这里用双重判定也是为了处理同名streamer互相顶掉的问题
+            if (mediaStream != null) {
+                return mediaStream.getTail();
+            }
+        }
+        throw new Exception("Room Doesnt Exist!");
+    }
+
     /**
      * @author 张贝易
      * 媒体流，使用链表保存媒体流信息
@@ -132,6 +143,10 @@ public class MediaMessagePool {
                 }
             }
             return now;
+        }
+
+        public Node getTail() {
+            return tail;
         }
     }
 

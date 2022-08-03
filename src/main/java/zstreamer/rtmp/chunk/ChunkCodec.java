@@ -19,7 +19,6 @@ import java.util.*;
 public class ChunkCodec extends ByteToMessageCodec<RawMessage> {
     private final MessageMerger messageMerger = new MessageMerger();
     private final MessageSplitter messageSplitter = new MessageSplitter();
-    int a = 1;
 
     @Override
     protected void encode(ChannelHandlerContext ctx, RawMessage msg, ByteBuf out) throws Exception {
@@ -86,16 +85,16 @@ public class ChunkCodec extends ByteToMessageCodec<RawMessage> {
                 //先把BasicHead解码，获取message类型信息和csId
                 ChunkHeader head = chunkDecoder.decodeBasicHead(in);
                 //获取当前chunkStream上一次传输的message基本信息，用于解压header
-                RawMessage last = lastMessage.getOrDefault(head.getChunkStreamId(), new RawMessage(false, chunkSize));
+                RawMessage lastProfile = lastMessage.getOrDefault(head.getChunkStreamId(), new RawMessage(false, chunkSize));
                 //解出当前message的header
-                chunkDecoder.decodeMessageHead(in, last, head);
+                RawMessage newProfile = chunkDecoder.decodeMessageHead(in, lastProfile, head);
                 //将当前message合并，这个函数主要处理单message分成多chunk的情况
-                mergeMessage(in, last);
-                lastMessage.put(head.getChunkStreamId(), last);
-                if (mergeMap.get(last.getMessageStreamId()).isFull()) {
+                mergeMessage(in, newProfile);
+                lastMessage.put(head.getChunkStreamId(), newProfile);
+                if (mergeMap.get(newProfile.getMessageStreamId()).isFull()) {
                     //如果整个message都读完了，就将它传递出去
-                    out.add(mergeMap.get(last.getMessageStreamId()));
-                    mergeMap.remove(last.getMessageStreamId());
+                    out.add(mergeMap.get(newProfile.getMessageStreamId()));
+                    mergeMap.remove(newProfile.getMessageStreamId());
                 }
             } catch (Exception e) {
                 in.resetReaderIndex();
