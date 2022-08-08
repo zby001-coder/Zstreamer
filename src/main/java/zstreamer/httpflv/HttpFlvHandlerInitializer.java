@@ -3,6 +3,7 @@ package zstreamer.httpflv;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.handler.codec.http.HttpServerCodec;
+import io.netty.handler.traffic.ChannelTrafficShapingHandler;
 import zstreamer.Config;
 
 import java.net.InetSocketAddress;
@@ -28,6 +29,7 @@ public class HttpFlvHandlerInitializer extends ChannelInboundHandlerAdapter {
 
     private void initMessageHandlers(ChannelHandlerContext ctx) {
         ctx.pipeline()
+                .addLast(new ChannelTrafficShapingHandler(1024*512,1024*512,1000))
                 .addLast(new HttpServerCodec())
                 .addLast(new AudienceHandler());
     }

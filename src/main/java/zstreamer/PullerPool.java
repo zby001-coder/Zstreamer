@@ -57,6 +57,7 @@ public class PullerPool {
                     }
                 } catch (Exception e) {
                     //打印日志
+                    System.out.println(e);
                 }
             }
         }

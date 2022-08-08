@@ -1,5 +1,6 @@
 package zstreamer.httpflv;
 
+import io.netty.channel.socket.nio.NioSocketChannel;
 import zstreamer.MediaMessagePool;
 import zstreamer.httpflv.flv.FlvHeader;
 import zstreamer.httpflv.flv.FlvTag;
@@ -10,7 +11,7 @@ import io.netty.channel.Channel;
  * @author 张贝易
  * 观众对象
  */
-public class Audience {
+public class Audience extends NioSocketChannel {
     private final Channel channel;
     private final String roomName;
     private int basicTimeStamp = -1;
@@ -32,14 +33,17 @@ public class Audience {
      *
      * @return 返回1表明拉到了，0表示没拉到
      */
-    public int pullMessage() {
+    public int pullMessage() throws NoSuchFieldException, IllegalAccessException {
         if (now != null && now.getMessage() != null) {
             if (basicTimeStamp == -1) {
                 writeBasic(now);
             }
             FlvTag mediaTag = new FlvTag(now.getMessage(), basicTimeStamp);
-            channel.writeAndFlush(mediaTag.generateTag());
-
+            //IO线程刷新缓冲区的速度不一定跟得上服务器发送的速度
+            //所以如果缓冲区满了就不继续发送
+            if (channel.isActive() && channel.isWritable()) {
+                channel.writeAndFlush(mediaTag.generateTag());
+            }
             last = now;
             now = now.getNext();
             return 1;
