@@ -1,5 +1,6 @@
 package zstreamer.rtmp.message.handlers.command;
 
+import zstreamer.MediaMessagePool;
 import zstreamer.rtmp.message.afm.AfmObject;
 import zstreamer.rtmp.message.handlers.media.StreamerMediaHandler;
 import zstreamer.rtmp.message.messageType.control.ChunkSizeMessage;
@@ -31,7 +32,7 @@ public class CommandHandler extends SimpleChannelInboundHandler<CommandMessage> 
             StreamerMediaHandler streamer = new StreamerMediaHandler();
             ctx.pipeline().addLast(streamer);
             //关掉同名的直播间，如果直播间不存在则不会发生任何事情
-            streamer.closeRoom((String) roomName.getValue());
+            MediaMessagePool.closeRoom((String) roomName.getValue());
         } else if (CommandMessage.CREATE_STREAM.equals(msg.getCommand().getValue())) {
             //因为服务器没有做messageStream管理，所以仅仅返回确认信息即可
             permitCreateStream(ctx, msg);
@@ -41,9 +42,8 @@ public class CommandHandler extends SimpleChannelInboundHandler<CommandMessage> 
             //允许主播开始推流
             permitPublish(ctx, msg);
         }else if (CommandMessage.FC_UNPUBLISH.equals(msg.getCommand().getValue())){
-            StreamerMediaHandler streamer = ctx.pipeline().get(StreamerMediaHandler.class);
             //关闭直播间
-            streamer.closeRoom((String) msg.getParams().get(1).getValue());
+            MediaMessagePool.closeRoom((String) msg.getParams().get(1).getValue());
         }else if (CommandMessage.DELETE_STREAM.equals(msg.getCommand().getValue())){
             //因为服务器没有做stream的管理，所以什么都不做
         }

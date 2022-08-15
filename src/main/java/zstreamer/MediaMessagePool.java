@@ -1,9 +1,9 @@
 package zstreamer;
 
 import zstreamer.httpflv.Audience;
+import zstreamer.rtmp.Streamer;
 import zstreamer.rtmp.message.messageType.media.DataMessage;
 import zstreamer.rtmp.message.messageType.media.MediaMessage;
-import zstreamer.rtmp.message.handlers.media.StreamerMediaHandler;
 
 import java.io.IOException;
 import java.util.concurrent.ConcurrentHashMap;
@@ -18,7 +18,7 @@ public class MediaMessagePool {
      * key是房间id，value是它的流
      */
     private static final ConcurrentHashMap<String, MediaStream> POOL = new ConcurrentHashMap<>();
-    private static final ConcurrentHashMap<String, StreamerMediaHandler> STREAMER_CHANNEL = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<String, Streamer> STREAMER = new ConcurrentHashMap<>();
 
     /**
      * 由于只有一个主播可以推流，所以这里不用加锁
@@ -26,16 +26,20 @@ public class MediaMessagePool {
      * @param roomName 主播的房间号(串流id)
      * @param message  媒体信息
      */
-    public static void pushMediaMessage(String roomName, MediaMessage message, StreamerMediaHandler streamerMediaHandler) {
+    public static void pushMediaMessage(String roomName, MediaMessage message, Streamer streamer) {
         POOL.get(roomName).pushMessage(message,
-                streamerMediaHandler.getMetaData(),
-                streamerMediaHandler.getAac(),
-                streamerMediaHandler.getAvc(),
-                streamerMediaHandler.getSei());
+                streamer.getMetaData(),
+                streamer.getAac(),
+                streamer.getAvc(),
+                streamer.getSei());
+    }
+
+    public static Streamer getStreamer(String roomName){
+        return STREAMER.get(roomName);
     }
 
     public static boolean registerAudience(String roomName, Audience audience) {
-        StreamerMediaHandler streamer = STREAMER_CHANNEL.get(roomName);
+        Streamer streamer = STREAMER.get(roomName);
         if (streamer != null) {
             return streamer.registerAudience(audience);
         }
@@ -43,24 +47,24 @@ public class MediaMessagePool {
     }
 
     public static void unRegisterAudience(String roomName, Audience audience) {
-        StreamerMediaHandler streamer = STREAMER_CHANNEL.get(roomName);
+        Streamer streamer = STREAMER.get(roomName);
         if (streamer != null) {
             streamer.unregisterAudience(audience);
         }
     }
 
-    public static void createRoom(String roomName, StreamerMediaHandler streamer) {
+    public static void createRoom(String roomName, Streamer streamer) {
         POOL.put(roomName, new MediaStream());
-        STREAMER_CHANNEL.put(roomName, streamer);
+        STREAMER.put(roomName, streamer);
     }
 
     public static void closeRoom(String roomName) throws IOException {
         POOL.remove(roomName);
-        StreamerMediaHandler streamer = STREAMER_CHANNEL.get(roomName);
+        Streamer streamer = STREAMER.get(roomName);
         if (streamer != null) {
             streamer.doCloseRoom();
         }
-        STREAMER_CHANNEL.remove(roomName);
+        STREAMER.remove(roomName);
     }
 
     public static boolean hasRoom(String roomName) {

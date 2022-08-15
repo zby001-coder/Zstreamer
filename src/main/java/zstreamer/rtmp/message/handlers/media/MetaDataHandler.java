@@ -14,7 +14,7 @@ public class MetaDataHandler extends SimpleChannelInboundHandler<DataMessage> {
     protected void channelRead0(ChannelHandlerContext ctx, DataMessage msg) throws Exception {
         if (DataMessage.META_DATA.equals(msg.getCommand().getValue())) {
             StreamerMediaHandler streamerMediaHandler = ctx.pipeline().get(StreamerMediaHandler.class);
-            streamerMediaHandler.setMetaData(msg);
+            streamerMediaHandler.getStreamer().setMetaData(msg);
         }
     }
 }

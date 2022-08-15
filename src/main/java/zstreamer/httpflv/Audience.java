@@ -1,31 +1,61 @@
 package zstreamer.httpflv;
 
-import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.EventLoop;
 import zstreamer.MediaMessagePool;
 import zstreamer.httpflv.flv.FlvHeader;
 import zstreamer.httpflv.flv.FlvTag;
+import zstreamer.rtmp.Streamer;
 import zstreamer.rtmp.message.messageType.media.MediaMessage;
 import io.netty.channel.Channel;
+
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author 张贝易
  * 观众对象
  */
-public class Audience extends NioSocketChannel {
+public class Audience {
     private final Channel channel;
     private final String roomName;
     private int basicTimeStamp = -1;
+    private int storedMessage = 0;
+    private final Runnable pullTask;
+    /**
+     * 最多连续拉流失败次数
+     */
+    private static final int MAX_EMPTY_MESSAGE_TIME = 10;
     /**
      * 当前要推的message和上一个推的message
      */
     private MediaMessagePool.Node now;
     private MediaMessagePool.Node last;
-    private volatile boolean roomClosed = false;
-    private volatile boolean audienceLeft = false;
+    private final Streamer streamer;
+    private boolean closed = false;
 
-    public Audience(Channel channel, String roomName) {
+    public Audience(Channel channel, Streamer streamer) {
         this.channel = channel;
-        this.roomName = roomName;
+        this.roomName = streamer.getRoomName();
+        this.streamer = streamer;
+        pullTask = new Runnable() {
+            private final EventLoop loop = channel.eventLoop();
+            private int waitCnt = 0;
+
+            @Override
+            public void run() {
+                if (!closed && pullMessage() > 0) {
+                    loop.execute(this);
+                    waitCnt = 0;
+                } else if (!closed) {
+                    if (waitCnt > MAX_EMPTY_MESSAGE_TIME) {
+                        onClose();
+                        return;
+                    }
+                    loop.schedule(this, 30, TimeUnit.MILLISECONDS);
+                    waitCnt++;
+                }
+            }
+        };
     }
 
     /**
@@ -33,7 +63,8 @@ public class Audience extends NioSocketChannel {
      *
      * @return 返回1表明拉到了，0表示没拉到
      */
-    public int pullMessage() throws NoSuchFieldException, IllegalAccessException {
+    private int pullMessage() {
+        int write = 0;
         if (now != null && now.getMessage() != null) {
             if (basicTimeStamp == -1) {
                 writeBasic(now);
@@ -42,17 +73,22 @@ public class Audience extends NioSocketChannel {
             //IO线程刷新缓冲区的速度不一定跟得上服务器发送的速度
             //所以如果缓冲区满了就不继续发送
             if (channel.isActive() && channel.isWritable()) {
-                channel.writeAndFlush(mediaTag.generateTag());
+                channel.write(mediaTag.generateTag());
+                storedMessage++;
+                write++;
             }
             last = now;
             now = now.getNext();
-            return 1;
         } else if (last != null && last.hasNext()) {
             //这个分支是为了处理上一次拉流时 now.next = null的情况
             now = last.getNext();
-            return pullMessage();
+            write += pullMessage();
         }
-        return 0;
+        //批量flush
+        if ((write == 0 && storedMessage > 0) || storedMessage > 5) {
+            channel.flush();
+        }
+        return write;
     }
 
     /**
@@ -84,33 +120,13 @@ public class Audience extends NioSocketChannel {
     }
 
     /**
-     * 直播间关闭了，观众的流也要关闭
+     * 直播间关闭或者观众离开
      */
-    public void onCloseRoom() {
-        roomClosed = true;
+    public void onClose() {
+        closed = true;
         MediaMessagePool.unRegisterAudience(roomName, this);
         channel.writeAndFlush(new byte[0]);
         channel.close();
-    }
-
-    /**
-     * 观众离开了，关闭流，同时从直播间解除注册
-     */
-    public void onLeave() {
-        audienceLeft = true;
-        MediaMessagePool.unRegisterAudience(roomName, this);
-        channel.writeAndFlush(new byte[0]);
-        channel.close();
-    }
-
-    /**
-     * 返回这个观众是否已经关闭，用来给外界决定释放Audience引用
-     * PullerPool在使用这个决定是否释放引用
-     *
-     * @return 观众是否关闭
-     */
-    public boolean closed() {
-        return roomClosed || audienceLeft;
     }
 
     /**
@@ -121,9 +137,9 @@ public class Audience extends NioSocketChannel {
      * @param timeStamp 开始拉流的时间戳
      * @throws Exception 在房间不存在的时候抛出异常
      */
-    public void enterRoom(String roomName, int timeStamp) throws Exception {
-        MediaMessagePool.registerAudience(roomName, this);
+    public void enterRoom(String roomName, int timeStamp, final ChannelHandlerContext ctx) throws Exception {
         now = MediaMessagePool.pullMediaMessage(roomName, timeStamp);
         last = null;
+        ctx.channel().eventLoop().execute(pullTask);
     }
 }

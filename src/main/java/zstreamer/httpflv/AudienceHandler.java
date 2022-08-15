@@ -4,7 +4,6 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http.*;
 import zstreamer.MediaMessagePool;
-import zstreamer.PullerPool;
 
 
 /**
@@ -23,7 +22,7 @@ public class AudienceHandler extends SimpleChannelInboundHandler<HttpRequest> {
         String uri = msg.uri();
         int idx = uri.lastIndexOf('/');
         String roomName = uri.substring(idx + 1);
-        audience = new Audience(ctx.channel(), roomName);
+        audience = new Audience(ctx.channel(), MediaMessagePool.getStreamer(roomName));
 
         if (MediaMessagePool.registerAudience(roomName, audience)) {
             HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
@@ -37,15 +36,16 @@ public class AudienceHandler extends SimpleChannelInboundHandler<HttpRequest> {
             ctx.pipeline().addLast(new ChunkWriter());
             ctx.pipeline().remove(HttpServerCodec.class);
 
-            audience.enterRoom(roomName, 0);
-            PullerPool.addAudience(audience);
+            audience.enterRoom(roomName, 0,ctx);
+        }else {
+            ctx.channel().close();
         }
     }
 
     @Override
     public void channelUnregistered(ChannelHandlerContext ctx) throws Exception {
         if (audience != null) {
-            audience.onLeave();
+            audience.onClose();
         }
         super.channelUnregistered(ctx);
     }
