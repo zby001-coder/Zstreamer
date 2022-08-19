@@ -1,16 +1,16 @@
 package zstreamer.rtmp.message.codec;
 
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.SimpleChannelInboundHandler;
 import zstreamer.rtmp.chunk.ChunkCodec;
 import zstreamer.rtmp.handshake.RtmpHandShaker;
 import zstreamer.rtmp.message.afm.AfmDecoder;
 import zstreamer.rtmp.message.messageType.RawMessage;
 import zstreamer.rtmp.message.messageType.RtmpMessage;
-import zstreamer.rtmp.message.messageType.media.DataMessage;
-import zstreamer.rtmp.message.messageType.media.MediaMessage;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.SimpleChannelInboundHandler;
 import zstreamer.rtmp.message.messageType.command.CommandMessage;
 import zstreamer.rtmp.message.messageType.control.ChunkSizeMessage;
+import zstreamer.rtmp.message.messageType.media.DataMessage;
+import zstreamer.rtmp.message.messageType.media.MediaMessage;
 
 /**
  * 目前三次握手已经完成、Chunk已经被封装成RawMessage(头部解析了，身体没解析)

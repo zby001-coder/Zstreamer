@@ -1,16 +1,13 @@
 package zstreamer;
 
-import zstreamer.httpflv.HttpFlvHandlerInitializer;
-import zstreamer.rtmp.RtmpHandlerInitializer;
+import io.netty.channel.ChannelOption;
+import zstreamer.commons.Config;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelOption;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
-
-import java.net.InetSocketAddress;
 
 public class Server {
     public static void main(String[] args) throws InterruptedException {
@@ -25,13 +22,12 @@ public class Server {
                     @Override
                     protected void initChannel(SocketChannel ch) throws Exception {
                         ch.pipeline()
-                                .addLast(new RtmpHandlerInitializer())
-                                .addLast(new HttpFlvHandlerInitializer());
+                                .addLast(HandlerInjector.getInstance());
                     }
                 });
         try {
-            ChannelFuture channelFuture1 = server.bind(new InetSocketAddress(Config.RTMP_PORT)).sync();
-            ChannelFuture channelFuture2 = server.bind(new InetSocketAddress(Config.HTTP_FLV_PORT)).sync();
+            ChannelFuture channelFuture1 = server.bind(Config.HTTP_PORT).sync();
+            ChannelFuture channelFuture2 = server.bind(Config.RTMP_PORT).sync();
             channelFuture1.channel().closeFuture().sync();
             channelFuture2.channel().closeFuture().sync();
         } finally {

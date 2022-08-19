@@ -2,7 +2,7 @@ package zstreamer.rtmp;
 
 import io.netty.channel.ChannelHandlerContext;
 import zstreamer.MediaMessagePool;
-import zstreamer.httpflv.Audience;
+import zstreamer.http.httpflv.Audience;
 import zstreamer.rtmp.message.messageType.media.DataMessage;
 import zstreamer.rtmp.message.messageType.media.MediaMessage;
 

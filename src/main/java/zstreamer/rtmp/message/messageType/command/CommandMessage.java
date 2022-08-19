@@ -1,9 +1,9 @@
 package zstreamer.rtmp.message.messageType.command;
 
+import io.netty.buffer.ByteBuf;
 import zstreamer.rtmp.message.afm.AfmEncoder;
 import zstreamer.rtmp.message.afm.AfmObject;
 import zstreamer.rtmp.message.messageType.RtmpMessage;
-import io.netty.buffer.ByteBuf;
 
 import java.util.Iterator;
 import java.util.LinkedList;

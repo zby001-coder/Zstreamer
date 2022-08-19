@@ -1,8 +1,8 @@
 package zstreamer.rtmp.chunk;
 
-import zstreamer.rtmp.message.messageType.RtmpMessage;
 import io.netty.buffer.ByteBuf;
 import zstreamer.rtmp.message.messageType.RawMessage;
+import zstreamer.rtmp.message.messageType.RtmpMessage;
 
 /**
  * @author 张贝易

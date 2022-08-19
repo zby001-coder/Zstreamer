@@ -1,6 +1,6 @@
 package zstreamer;
 
-import zstreamer.httpflv.Audience;
+import zstreamer.http.httpflv.Audience;
 import zstreamer.rtmp.Streamer;
 import zstreamer.rtmp.message.messageType.media.DataMessage;
 import zstreamer.rtmp.message.messageType.media.MediaMessage;

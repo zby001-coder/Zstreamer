@@ -1,8 +1,9 @@
-package zstreamer.httpflv;
+package zstreamer.http.httpflv;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.buffer.Unpooled;
+import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.channel.ChannelPromise;
@@ -13,10 +14,19 @@ import java.nio.charset.StandardCharsets;
  * @author 张贝易
  * 处理http分片的处理器
  */
+@ChannelHandler.Sharable
 public class ChunkWriter extends ChannelOutboundHandlerAdapter {
+    private static final ChunkWriter INSTANCE = new ChunkWriter();
     private static final int CHUNK_SIZE = 4096;
     private static final String SPLITTER = "\r\n";
 
+    public static ChunkWriter getInstance(){
+        return INSTANCE;
+    }
+
+    private ChunkWriter(){
+
+    }
     @Override
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
         if (msg instanceof byte[]) {

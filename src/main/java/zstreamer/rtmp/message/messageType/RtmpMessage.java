@@ -1,8 +1,8 @@
 package zstreamer.rtmp.message.messageType;
 
+import io.netty.buffer.ByteBuf;
 import zstreamer.rtmp.message.afm.AfmDecoder;
 import zstreamer.rtmp.message.afm.AfmEncoder;
-import io.netty.buffer.ByteBuf;
 
 /**
  * @author 张贝易

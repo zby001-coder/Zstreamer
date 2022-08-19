@@ -1,7 +1,7 @@
 package zstreamer.rtmp.message.messageType.control;
 
-import zstreamer.rtmp.message.messageType.RtmpMessage;
 import io.netty.buffer.ByteBuf;
+import zstreamer.rtmp.message.messageType.RtmpMessage;
 
 /**
  * @author 张贝易

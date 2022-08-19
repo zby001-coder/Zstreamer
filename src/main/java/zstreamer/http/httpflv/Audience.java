@@ -1,13 +1,13 @@
-package zstreamer.httpflv;
+package zstreamer.http.httpflv;
 
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.EventLoop;
 import zstreamer.MediaMessagePool;
-import zstreamer.httpflv.flv.FlvHeader;
-import zstreamer.httpflv.flv.FlvTag;
+import zstreamer.http.httpflv.flv.FlvHeader;
+import zstreamer.http.httpflv.flv.FlvTag;
 import zstreamer.rtmp.Streamer;
 import zstreamer.rtmp.message.messageType.media.MediaMessage;
-import io.netty.channel.Channel;
 
 import java.util.concurrent.TimeUnit;
 
@@ -30,13 +30,11 @@ public class Audience {
      */
     private MediaMessagePool.Node now;
     private MediaMessagePool.Node last;
-    private final Streamer streamer;
     private boolean closed = false;
 
     public Audience(Channel channel, Streamer streamer) {
         this.channel = channel;
         this.roomName = streamer.getRoomName();
-        this.streamer = streamer;
         pullTask = new Runnable() {
             private final EventLoop loop = channel.eventLoop();
             private int waitCnt = 0;

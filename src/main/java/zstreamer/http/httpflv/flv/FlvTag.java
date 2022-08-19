@@ -1,10 +1,9 @@
-package zstreamer.httpflv.flv;
+package zstreamer.http.httpflv.flv;
 
-import zstreamer.rtmp.message.messageType.media.DataMessage;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import zstreamer.rtmp.message.messageType.media.DataMessage;
 import zstreamer.rtmp.message.messageType.media.MediaMessage;
-
 /**
  * @author 张贝易
  * FLV文件的Tag内容，有两种: 音视频/Script
