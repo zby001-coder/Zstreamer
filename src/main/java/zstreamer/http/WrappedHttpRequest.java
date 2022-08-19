@@ -1,9 +1,10 @@
-package zstreamer.commons.util;
+package zstreamer.http;
 
 import io.netty.handler.codec.http.DefaultHttpObject;
 import io.netty.handler.codec.http.DefaultHttpRequest;
 import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpMethod;
+import zstreamer.commons.util.UrlResolver;
 
 /**
  * @author 张贝易

@@ -1,6 +1,5 @@
 package zstreamer.http;
 
-import zstreamer.commons.util.WrappedHttpRequest;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelId;
 import io.netty.channel.SimpleChannelInboundHandler;

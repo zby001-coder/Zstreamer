@@ -6,7 +6,7 @@ import io.netty.channel.ChannelId;
 import io.netty.handler.codec.http.*;
 import zstreamer.MediaMessagePool;
 import zstreamer.commons.annotation.RequestPath;
-import zstreamer.commons.util.WrappedHttpRequest;
+import zstreamer.http.WrappedHttpRequest;
 import zstreamer.http.AbstractHttpHandler;
 
 import java.util.concurrent.ConcurrentHashMap;

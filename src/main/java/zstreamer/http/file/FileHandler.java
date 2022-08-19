@@ -8,7 +8,7 @@ import io.netty.handler.codec.http.*;
 import io.netty.handler.stream.ChunkedFile;
 import zstreamer.commons.Config;
 import zstreamer.commons.annotation.RequestPath;
-import zstreamer.commons.util.WrappedHttpRequest;
+import zstreamer.http.WrappedHttpRequest;
 import zstreamer.http.AbstractHttpHandler;
 
 import java.io.File;
@@ -133,7 +133,11 @@ public class FileHandler extends AbstractHttpHandler {
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-        UP_LOADERS.remove(ctx.channel().id());
+        FileUploader uploader = UP_LOADERS.get(ctx.channel().id());
+        if (uploader != null) {
+            uploader.close();
+            UP_LOADERS.remove(ctx.channel().id());
+        }
         super.channelInactive(ctx);
     }
 

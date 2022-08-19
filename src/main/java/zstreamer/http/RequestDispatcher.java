@@ -2,7 +2,6 @@ package zstreamer.http;
 
 import zstreamer.commons.util.HandlerClassResolver;
 import zstreamer.commons.util.UrlResolver;
-import zstreamer.commons.util.WrappedHttpRequest;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
