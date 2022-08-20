@@ -28,7 +28,7 @@ public class AudienceHandler extends AbstractHttpHandler {
     }
 
     @Override
-    protected void handleGet(ChannelHandlerContext ctx, DefaultHttpObject msg) throws Exception {
+    protected boolean handleGet(ChannelHandlerContext ctx, DefaultHttpObject msg) throws Exception {
         WrappedHttpRequest request = (WrappedHttpRequest) msg;
         String roomName = request.getParam("roomName");
         Audience audience = new Audience(ctx.channel(), MediaMessagePool.getStreamer(roomName));
@@ -36,8 +36,8 @@ public class AudienceHandler extends AbstractHttpHandler {
 
         if (MediaMessagePool.registerAudience(roomName, audience)) {
             HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
-            response.headers().set("Content-Type", "video/x-flv");
-            response.headers().set("Transfer-Encoding", "chunked");
+            response.headers().set(HttpHeaderNames.CONTENT_TYPE, "video/x-flv");
+            response.headers().set(HttpHeaderNames.TRANSFER_ENCODING, HttpHeaderValues.CHUNKED);
 
             ctx.writeAndFlush(response);
             ctx.pipeline().remove(HttpServerCodec.class);
@@ -47,6 +47,7 @@ public class AudienceHandler extends AbstractHttpHandler {
         } else {
             ctx.channel().close();
         }
+        return false;
     }
 
     @Override

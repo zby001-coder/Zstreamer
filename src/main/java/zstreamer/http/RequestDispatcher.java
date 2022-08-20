@@ -1,14 +1,11 @@
 package zstreamer.http;
 
+import io.netty.handler.codec.http.*;
 import zstreamer.commons.util.HandlerClassResolver;
 import zstreamer.commons.util.UrlResolver;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.handler.codec.http.DefaultFullHttpResponse;
-import io.netty.handler.codec.http.DefaultHttpRequest;
-import io.netty.handler.codec.http.HttpResponseStatus;
-import io.netty.handler.codec.http.HttpVersion;
 
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -44,7 +41,7 @@ public class RequestDispatcher extends SimpleChannelInboundHandler<DefaultHttpRe
             handler.channelRead(ctx, new WrappedHttpRequest(msg, restfulUrl));
         } else {
             DefaultFullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.NOT_FOUND);
-            response.headers().set("content-length", 0);
+            response.headers().set(HttpHeaderNames.CONTENT_LENGTH, 0);
             ctx.writeAndFlush(response);
         }
     }

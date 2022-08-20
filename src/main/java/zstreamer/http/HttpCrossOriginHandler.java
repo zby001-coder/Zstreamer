@@ -26,10 +26,10 @@ public class HttpCrossOriginHandler extends ChannelDuplexHandler {
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
         if (msg instanceof DefaultHttpResponse) {
             ((DefaultHttpResponse) msg).headers()
-                    .set("Access-Control-Allow-Origin", "*")
-                    .set("Access-Control-Allow-Method", "*")
-                    .set("Access-Control-Allow-Headers", "*")
-                    .set("Connection", "keep-alive");
+                    .set(HttpHeaderNames.ACCESS_CONTROL_ALLOW_ORIGIN, "*")
+                    .set(HttpHeaderNames.ACCESS_CONTROL_ALLOW_METHODS, "*")
+                    .set(HttpHeaderNames.ACCESS_CONTROL_ALLOW_HEADERS, "*")
+                    .set(HttpHeaderNames.CONNECTION, HttpHeaderValues.KEEP_ALIVE);
         }
         super.write(ctx, msg, promise);
     }
@@ -39,7 +39,7 @@ public class HttpCrossOriginHandler extends ChannelDuplexHandler {
         if (msg instanceof DefaultHttpRequest) {
             if (((DefaultHttpRequest) msg).method().equals(HttpMethod.OPTIONS)) {
                 DefaultFullHttpResponse res = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
-                res.headers().set("content-length", "0");
+                res.headers().set(HttpHeaderNames.CONTENT_LENGTH, "0");
                 ctx.channel().writeAndFlush(res);
                 return;
             }

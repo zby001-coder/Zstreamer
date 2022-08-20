@@ -39,7 +39,7 @@ public class HandlerInjector extends ChannelInitializer<SocketChannel> {
 
     @Override
     protected void initChannel(SocketChannel ch) throws Exception {
-        ch.pipeline().addLast(new ChannelTrafficShapingHandler(1024 * 1024, 1024 * 1024, 1000));
+        ch.pipeline().addLast(new ChannelTrafficShapingHandler(Config.BYTE_OUT_PER_SECOND, Config.BYTE_IN_PER_SECOND, Config.CHECK_INTERVAL));
         InetSocketAddress address = ch.localAddress();
         int port = address.getPort();
         if (port == Config.HTTP_PORT) {
