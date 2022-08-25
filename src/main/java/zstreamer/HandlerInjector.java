@@ -8,6 +8,8 @@ import io.netty.handler.codec.http.HttpServerCodec;
 import io.netty.handler.stream.ChunkedWriteHandler;
 import io.netty.handler.traffic.ChannelTrafficShapingHandler;
 import zstreamer.commons.Config;
+import zstreamer.http.ContextHandler;
+import zstreamer.http.FilterExecutor;
 import zstreamer.ssl.SslHandlerBuilder;
 import zstreamer.http.RequestDispatcher;
 import zstreamer.http.RequestResolver;
@@ -58,7 +60,9 @@ public class HandlerInjector extends ChannelInitializer<SocketChannel> {
                 .addLast(new HttpServerCodec())
                 .addLast(new ChunkedWriteHandler())
                 .addLast(RequestResolver.getInstance())
-                .addLast(RequestDispatcher.getInstance());
+                .addLast(FilterExecutor.getInstance())
+                .addLast(RequestDispatcher.getInstance())
+                .addLast(ContextHandler.getInstance());
     }
 
     private void initRtmp(ChannelPipeline pipeline) {

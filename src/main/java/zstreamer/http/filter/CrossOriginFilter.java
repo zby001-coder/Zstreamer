@@ -8,20 +8,11 @@ import zstreamer.commons.annotation.FilterPath;
  * @author 张贝易
  * 处理跨域
  */
-@FilterPath("/file/*")
+@FilterPath("/*")
 public class CrossOriginFilter extends AbstractHttpFilter {
-    private static final CrossOriginFilter INSTANCE = new CrossOriginFilter();
-
-    private CrossOriginFilter() {
-
-    }
-
-    public static CrossOriginFilter getInstance() {
-        return INSTANCE;
-    }
 
     @Override
-    protected boolean handleIn(ChannelHandlerContext ctx, DefaultHttpRequest request) {
+    public boolean handleIn(ChannelHandlerContext ctx, DefaultHttpRequest request) {
         if (request.method().equals(HttpMethod.OPTIONS)) {
             DefaultFullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
             response.headers().set(HttpHeaderNames.CONTENT_LENGTH, "0");
@@ -32,7 +23,7 @@ public class CrossOriginFilter extends AbstractHttpFilter {
     }
 
     @Override
-    protected void handleOut(DefaultHttpResponse response) {
+    public void handleOut(DefaultHttpResponse response) {
         response.headers()
                 .set(HttpHeaderNames.ACCESS_CONTROL_ALLOW_ORIGIN, "*")
                 .set(HttpHeaderNames.ACCESS_CONTROL_ALLOW_METHODS, "*")

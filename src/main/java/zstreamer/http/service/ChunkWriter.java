@@ -1,4 +1,4 @@
-package zstreamer.http.service.httpflv;
+package zstreamer.http.service;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
@@ -20,15 +20,17 @@ public class ChunkWriter extends ChannelOutboundHandlerAdapter {
     private static final int CHUNK_SIZE = 4096;
     private static final String SPLITTER = "\r\n";
 
-    public static ChunkWriter getInstance(){
+    public static ChunkWriter getInstance() {
         return INSTANCE;
     }
 
-    private ChunkWriter(){
+    private ChunkWriter() {
 
     }
+
     @Override
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
+        ctx.channel().config().setAutoRead(false);
         if (msg instanceof byte[]) {
             byte[] bytes = (byte[]) msg;
             int idx = 0;
@@ -43,6 +45,8 @@ public class ChunkWriter extends ChannelOutboundHandlerAdapter {
                 out.writeBytes(SPLITTER.getBytes(StandardCharsets.US_ASCII));
 
                 ctx.write(out);
+                //未知长度的块已经写完了，不用担心多个请求交叉
+                ctx.channel().config().setAutoRead(true);
                 return;
             }
             //正常流分片传输

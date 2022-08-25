@@ -94,6 +94,9 @@ public class UrlClassTier<T> {
      */
     private ClassInfo<T> matchHandler(String[] prefixes, int childIdx, UrlClassTier<T> tier) {
         ClassInfo<T> result = null;
+        if (tier == null) {
+            return null;
+        }
         if (childIdx < prefixes.length && tier.children.containsKey(prefixes[childIdx])) {
             result = matchHandlerExactly(prefixes, childIdx, tier);
         }
@@ -158,6 +161,9 @@ public class UrlClassTier<T> {
      */
     private List<ClassInfo<T>> matchFilter(String[] prefixes, int childIdx, UrlClassTier<T> tier) {
         LinkedList<ClassInfo<T>> result = new LinkedList<>();
+        if (tier == null) {
+            return result;
+        }
         if (tier.children.containsKey(Config.PLACE_HOLDER_REPLACER_STR)) {
             UrlClassTier<T> child = tier.children.get(Config.PLACE_HOLDER_REPLACER_STR);
             for (Class<T> tClass : child.handlerClz) {
@@ -166,7 +172,7 @@ public class UrlClassTier<T> {
         }
         if (childIdx + 1 >= prefixes.length) {
             UrlClassTier<T> child = tier.children.get(prefixes[childIdx]);
-            if (child != null) {
+            if (child != null && !prefixes[childIdx].equals(Config.PLACE_HOLDER_REPLACER_STR)) {
                 for (Class<T> tClass : child.handlerClz) {
                     result.add(new ClassInfo<>(tClass, child.url));
                 }

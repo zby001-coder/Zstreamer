@@ -2,19 +2,20 @@ package zstreamer.http;
 
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelId;
 import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.handler.codec.http.*;
-import io.netty.util.concurrent.FastThreadLocal;
+import io.netty.handler.codec.http.DefaultHttpContent;
+import io.netty.handler.codec.http.DefaultHttpObject;
+import io.netty.handler.codec.http.DefaultHttpRequest;
+import zstreamer.commons.loader.FilterClassResolver;
 import zstreamer.commons.loader.HandlerClassResolver;
 import zstreamer.commons.loader.UrlClassTier;
 import zstreamer.commons.loader.UrlResolver;
-import zstreamer.http.entity.request.RequestState;
-import zstreamer.http.entity.request.WrappedHttpContent;
-import zstreamer.http.entity.request.WrappedHttpRequest;
+import zstreamer.http.entity.MessageInfo;
+import zstreamer.http.filter.AbstractHttpFilter;
 import zstreamer.http.service.AbstractHttpHandler;
 
 import java.util.HashMap;
+import java.util.List;
 
 /**
  * @author 张贝易
@@ -22,18 +23,18 @@ import java.util.HashMap;
  */
 @ChannelHandler.Sharable
 public class RequestResolver extends SimpleChannelInboundHandler<DefaultHttpObject> {
-    /**
-     * 某一个channel当前请求的状态
-     */
-    private static final FastThreadLocal<HashMap<ChannelId, RequestState>> REQUEST_STATES = new FastThreadLocal<>();
+    
     private static final RequestResolver INSTANCE = new RequestResolver();
-    private static final UrlResolver URL_RESOLVER = UrlResolver.getInstance();
 
     private RequestResolver() {
     }
 
     public static RequestResolver getInstance() {
         return INSTANCE;
+    }
+
+    public MessageInfo getMessageInfo(ChannelHandlerContext ctx) {
+        return ContextHandler.INFO_MAP.get().get(ctx.channel().id());
     }
 
     /**
@@ -43,10 +44,9 @@ public class RequestResolver extends SimpleChannelInboundHandler<DefaultHttpObje
      */
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        if (REQUEST_STATES.get() == null) {
-            REQUEST_STATES.set(new HashMap<>());
+        if (ContextHandler.INFO_MAP.get() == null) {
+            ContextHandler.INFO_MAP.set(new HashMap<>());
         }
-        REQUEST_STATES.get().put(ctx.channel().id(), new RequestState(null, false));
         super.channelActive(ctx);
     }
 
@@ -68,18 +68,17 @@ public class RequestResolver extends SimpleChannelInboundHandler<DefaultHttpObje
     private void handleHeader(ChannelHandlerContext ctx, DefaultHttpRequest msg) throws Exception {
         //解析url，获取其对应handler信息
         String url = msg.uri();
-        UrlClassTier.ClassInfo<AbstractHttpHandler> info = HandlerClassResolver.getInstance().resolveHandler(url);
-        if (info != null) {
-            //设置请求的状态
-            RequestState state = REQUEST_STATES.get().get(ctx.channel().id());
-            state.setInUse(true);
-            state.setCurrentMethod(msg.method());
+        UrlClassTier.ClassInfo<AbstractHttpHandler> handlerInfo = HandlerClassResolver.getInstance().resolveHandler(url);
+        if (handlerInfo != null) {
+            List<UrlClassTier.ClassInfo<AbstractHttpFilter>> filterInfo = FilterClassResolver.getInstance().resolveFilter(handlerInfo.getUrlPattern());
             //将url中的参数解析出来，包装后传递下去
-            UrlResolver.RestfulUrl restfulUrl = URL_RESOLVER.resolveUrl(url, info.getUrlPattern());
-            ctx.fireChannelRead(new WrappedHttpRequest(restfulUrl, state, msg, info.getClz()));
-        } else {
-            //info为空，说明解析url失败，报404
-            responseNoFound(ctx);
+            UrlResolver.RestfulUrl restfulUrl = UrlResolver.getInstance().resolveUrl(url, handlerInfo.getUrlPattern());
+            //设置请求的状态
+            MessageInfo messageInfo = new MessageInfo(msg.method(), restfulUrl, handlerInfo, filterInfo);
+            messageInfo.setState(MessageInfo.RECEIVED_HEADER);
+            ContextHandler.INFO_MAP.get().put(ctx.channel().id(), messageInfo);
+            //传递消息
+            ctx.fireChannelRead(msg);
         }
     }
 
@@ -91,37 +90,18 @@ public class RequestResolver extends SimpleChannelInboundHandler<DefaultHttpObje
      */
     private void handleContent(ChannelHandlerContext ctx, DefaultHttpContent msg) throws Exception {
         //根据当前请求使用的handler分发请求体
-        RequestState state = REQUEST_STATES.get().get(ctx.channel().id());
-        //包装并分发content
-        if (state.isInUse()) {
-            ctx.fireChannelRead(new WrappedHttpContent(state, msg));
+        MessageInfo messageInfo = ContextHandler.INFO_MAP.get().get(ctx.channel().id());
+        //传递content
+        int state = messageInfo.getState();
+        if (state != MessageInfo.DISABLED) {
+            ctx.fireChannelRead(msg);
         }
-        //如果当前请求的state被置为false，说明下面的handler抛出异常了，不继续处理content
-    }
-
-    /**
-     * 响应404的信息
-     *
-     * @param ctx 上下文
-     */
-    private void responseNoFound(ChannelHandlerContext ctx) {
-        DefaultFullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.NOT_FOUND);
-        response.headers().set(HttpHeaderNames.CONTENT_LENGTH, 0);
-        ctx.writeAndFlush(response);
-        //不处理下面的content
-        REQUEST_STATES.get().get(ctx.channel().id()).setInUse(false);
-    }
-
-    @Override
-    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-        //删除当前HTTP请求信息
-        REQUEST_STATES.get().remove(ctx.channel().id());
-        ctx.fireChannelInactive();
+        //如果当前请求的state被置为disabled，就不处理下面的数据了
     }
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
         //下层业务handler抛出异常，将当前请求设置为不处理
-        REQUEST_STATES.get().get(ctx.channel().id()).setInUse(false);
+        ContextHandler.INFO_MAP.get().get(ctx.channel().id()).setState(MessageInfo.DISABLED);
     }
 }

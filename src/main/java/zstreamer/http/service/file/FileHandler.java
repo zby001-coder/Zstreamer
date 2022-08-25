@@ -9,9 +9,6 @@ import io.netty.util.concurrent.FastThreadLocal;
 import org.apache.tika.Tika;
 import zstreamer.commons.Config;
 import zstreamer.commons.annotation.RequestPath;
-import zstreamer.http.entity.request.WrappedHttpContent;
-import zstreamer.http.entity.request.WrappedHttpObject;
-import zstreamer.http.entity.request.WrappedHttpRequest;
 import zstreamer.http.service.AbstractHttpHandler;
 
 import java.io.File;
@@ -58,13 +55,13 @@ public class FileHandler extends AbstractHttpHandler {
     }
 
     @Override
-    protected boolean handleGet(ChannelHandlerContext ctx, WrappedHttpObject msg) throws Exception {
-        downLoader.handleHeader(ctx, (WrappedHttpRequest) msg);
+    protected boolean handleGet(ChannelHandlerContext ctx, DefaultHttpObject msg) throws Exception {
+        downLoader.handleHeader(ctx, (DefaultHttpRequest) msg);
         return true;
     }
 
     @Override
-    protected boolean handlePost(ChannelHandlerContext ctx, WrappedHttpObject msg) throws Exception {
+    protected boolean handlePost(ChannelHandlerContext ctx, DefaultHttpObject msg) throws Exception {
         FileUploader uploader = null;
         boolean finished = false;
         HashMap<ChannelId, FileUploader> upLoaders = UP_LOADERS.get();
@@ -74,10 +71,10 @@ public class FileHandler extends AbstractHttpHandler {
             uploader = new FileUploader();
             upLoaders.put(ctx.channel().id(), uploader);
         }
-        if (msg instanceof WrappedHttpRequest) {
-            uploader.handleHeader(ctx, (WrappedHttpRequest) msg);
+        if (msg instanceof DefaultHttpRequest) {
+            uploader.handleHeader(ctx, (DefaultHttpRequest) msg);
         } else {
-            if (uploader.handleContent(ctx, (WrappedHttpContent) msg)) {
+            if (uploader.handleContent(ctx, (DefaultHttpContent) msg)) {
                 finished = true;
                 uploader.close();
             }
@@ -94,8 +91,8 @@ public class FileHandler extends AbstractHttpHandler {
      * 文件下载工具
      */
     private static class FileDownLoader {
-        protected void handleHeader(ChannelHandlerContext ctx, WrappedHttpRequest request) throws IOException {
-            String fileName = request.getParam("fileName");
+        protected void handleHeader(ChannelHandlerContext ctx, DefaultHttpRequest request) throws IOException {
+            String fileName = getCurrentInfo(ctx).getRestfulUrl().getParam("fileName");
             String range = request.headers().get(HttpHeaderNames.RANGE);
             if (fileName == null) {
                 throw new NullPointerException();
@@ -173,9 +170,9 @@ public class FileHandler extends AbstractHttpHandler {
         private long fileSize = 0;
         private long writtenSize = 0;
 
-        protected void handleHeader(ChannelHandlerContext ctx, WrappedHttpRequest request) throws Exception {
+        protected void handleHeader(ChannelHandlerContext ctx, DefaultHttpRequest request) throws Exception {
             fileSize = Long.parseLong(request.headers().get(HttpHeaderNames.CONTENT_LENGTH));
-            String fileName = request.getParam("fileName");
+            String fileName = getCurrentInfo(ctx).getRestfulUrl().getParam("fileName");
             String contentType = request.headers().get(HttpHeaderNames.CONTENT_TYPE);
             String fileType = contentType.substring(contentType.lastIndexOf('/') + 1);
             if (fileName == null) {
@@ -185,7 +182,7 @@ public class FileHandler extends AbstractHttpHandler {
             fileChannel = new FileOutputStream(filePath).getChannel();
         }
 
-        protected boolean handleContent(ChannelHandlerContext ctx, WrappedHttpContent request) throws Exception {
+        protected boolean handleContent(ChannelHandlerContext ctx, DefaultHttpContent request) throws Exception {
             writtenSize += request.content().readableBytes();
             fileChannel.write(request.content().nioBuffer());
             return writtenSize == fileSize;
@@ -199,7 +196,6 @@ public class FileHandler extends AbstractHttpHandler {
             }
         }
     }
-
 
     /**
      * 关闭并将uploader移除

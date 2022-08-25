@@ -5,9 +5,9 @@ import io.netty.channel.ChannelId;
 import io.netty.handler.codec.http.*;
 import zstreamer.MediaMessagePool;
 import zstreamer.commons.annotation.RequestPath;
-import zstreamer.http.entity.request.WrappedHttpObject;
-import zstreamer.http.entity.request.WrappedHttpRequest;
+import zstreamer.http.entity.MessageInfo;
 import zstreamer.http.service.AbstractHttpHandler;
+import zstreamer.http.service.ChunkWriter;
 
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -21,9 +21,9 @@ public class AudienceHandler extends AbstractHttpHandler {
     private static final ConcurrentHashMap<ChannelId, Audience> AUDIENCE_MAP = new ConcurrentHashMap<>();
 
     @Override
-    protected boolean handleGet(ChannelHandlerContext ctx, WrappedHttpObject msg) throws Exception {
-        WrappedHttpRequest request = (WrappedHttpRequest) msg;
-        String roomName = request.getParam("roomName");
+    protected boolean handleGet(ChannelHandlerContext ctx, DefaultHttpObject msg) throws Exception {
+        MessageInfo currentInfo = getCurrentInfo(ctx);
+        String roomName = currentInfo.getRestfulUrl().getParam("roomName");
         Audience audience = new Audience(ctx.channel(), MediaMessagePool.getStreamer(roomName));
         AUDIENCE_MAP.put(ctx.channel().id(), audience);
 
@@ -41,6 +41,12 @@ public class AudienceHandler extends AbstractHttpHandler {
             ctx.channel().close();
         }
         return false;
+    }
+
+    @Override
+    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+        onClose(ctx);
+        ctx.fireChannelInactive();
     }
 
     @Override
