@@ -1,4 +1,4 @@
-package zstreamer.commons.util;
+package zstreamer.commons.loader;
 
 import java.io.File;
 import java.io.IOException;

@@ -1,4 +1,4 @@
-package zstreamer.http.httpflv;
+package zstreamer.http.service.httpflv;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;

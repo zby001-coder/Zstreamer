@@ -1,4 +1,4 @@
-package zstreamer.commons.util;
+package zstreamer.ssl;
 
 import io.netty.channel.Channel;
 import io.netty.handler.ssl.*;

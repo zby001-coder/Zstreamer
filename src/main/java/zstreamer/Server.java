@@ -1,14 +1,17 @@
 package zstreamer;
 
-import io.netty.channel.ChannelOption;
-import zstreamer.commons.Config;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
+import io.netty.channel.ChannelOption;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import zstreamer.commons.Config;
 
+/**
+ * @author 张贝易
+ */
 public class Server {
     public static void main(String[] args) throws InterruptedException {
         NioEventLoopGroup boss = new NioEventLoopGroup(1);

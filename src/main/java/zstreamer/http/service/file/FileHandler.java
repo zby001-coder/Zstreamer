@@ -1,61 +1,85 @@
-package zstreamer.http.file;
+package zstreamer.http.service.file;
 
-import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelId;
 import io.netty.channel.DefaultFileRegion;
 import io.netty.handler.codec.http.*;
 import io.netty.handler.stream.ChunkedFile;
+import io.netty.util.concurrent.FastThreadLocal;
 import org.apache.tika.Tika;
 import zstreamer.commons.Config;
 import zstreamer.commons.annotation.RequestPath;
-import zstreamer.http.AbstractHttpHandler;
-import zstreamer.http.WrappedHttpRequest;
+import zstreamer.http.entity.request.WrappedHttpContent;
+import zstreamer.http.entity.request.WrappedHttpObject;
+import zstreamer.http.entity.request.WrappedHttpRequest;
+import zstreamer.http.service.AbstractHttpHandler;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.channels.FileChannel;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.HashMap;
 
 /**
  * @author 张贝易
  * 处理文件上传下载的handler
  */
-@ChannelHandler.Sharable
 @RequestPath(value = "/file/{fileName}")
 public class FileHandler extends AbstractHttpHandler {
     private static final Tika TIKA = new Tika();
     /**
      * uploader是有状态的，所以需要对不同的channel保存不同的uploader
      */
-    private static final ConcurrentHashMap<ChannelId, FileUploader> UP_LOADERS = new ConcurrentHashMap<>();
+    private static final FastThreadLocal<HashMap<ChannelId, FileUploader>> UP_LOADERS = new FastThreadLocal<>();
     private final FileDownLoader downLoader = new FileDownLoader();
 
+    /**
+     * 请求开始时，检测当前线程是否有upLoader的threadLocal值
+     * 没有就注入进去
+     */
     @Override
-    protected boolean handleGet(ChannelHandlerContext ctx, DefaultHttpObject msg) throws Exception {
+    protected void requestStart(ChannelHandlerContext ctx) throws Exception {
+        if (UP_LOADERS.get() == null) {
+            UP_LOADERS.set(new HashMap<>());
+        }
+        super.requestStart(ctx);
+    }
+
+    /**
+     * 请求结束时，关闭当前线程的uploader
+     *
+     * @param ctx 上下文
+     */
+    @Override
+    protected void requestEnd(ChannelHandlerContext ctx) throws Exception {
+        closeAndRemoveUploader(ctx);
+        super.requestEnd(ctx);
+    }
+
+    @Override
+    protected boolean handleGet(ChannelHandlerContext ctx, WrappedHttpObject msg) throws Exception {
         downLoader.handleHeader(ctx, (WrappedHttpRequest) msg);
         return true;
     }
 
     @Override
-    protected boolean handlePost(ChannelHandlerContext ctx, DefaultHttpObject msg) throws Exception {
+    protected boolean handlePost(ChannelHandlerContext ctx, WrappedHttpObject msg) throws Exception {
         FileUploader uploader = null;
         boolean finished = false;
-        if (UP_LOADERS.containsKey(ctx.channel().id())) {
-            uploader = UP_LOADERS.get(ctx.channel().id());
+        HashMap<ChannelId, FileUploader> upLoaders = UP_LOADERS.get();
+        if (upLoaders.containsKey(ctx.channel().id())) {
+            uploader = upLoaders.get(ctx.channel().id());
         } else {
             uploader = new FileUploader();
-            UP_LOADERS.put(ctx.channel().id(), uploader);
+            upLoaders.put(ctx.channel().id(), uploader);
         }
         if (msg instanceof WrappedHttpRequest) {
             uploader.handleHeader(ctx, (WrappedHttpRequest) msg);
         } else {
-            if (uploader.handleContent(ctx, (DefaultHttpContent) msg)) {
+            if (uploader.handleContent(ctx, (WrappedHttpContent) msg)) {
                 finished = true;
                 uploader.close();
-                UP_LOADERS.remove(ctx.channel().id());
             }
         }
         return finished;
@@ -63,27 +87,26 @@ public class FileHandler extends AbstractHttpHandler {
 
     @Override
     protected void onException(ChannelHandlerContext ctx) throws Exception {
-        FileUploader uploader = UP_LOADERS.get(ctx.channel().id());
-        if (uploader != null) {
-            uploader.close();
-            UP_LOADERS.remove(ctx.channel().id());
-        }
+        closeAndRemoveUploader(ctx);
     }
 
+    /**
+     * 文件下载工具
+     */
     private static class FileDownLoader {
-        protected void handleHeader(ChannelHandlerContext context, WrappedHttpRequest msg) throws IOException {
-            String fileName = msg.getParam("fileName");
-            String range = msg.headers().get(HttpHeaderNames.RANGE);
+        protected void handleHeader(ChannelHandlerContext ctx, WrappedHttpRequest request) throws IOException {
+            String fileName = request.getParam("fileName");
+            String range = request.headers().get(HttpHeaderNames.RANGE);
             if (fileName == null) {
                 throw new NullPointerException();
             }
             String filePath = Config.BASE_URL + fileName;
             File file = new File(filePath);
             if (range == null) {
-                responseFile(file, context);
+                responseFile(file, ctx);
             } else {
                 long[] ranges = handleRange(range, file);
-                responseRageFile(file, context, ranges[0], ranges[1]);
+                responseRageFile(file, ctx, ranges[0], ranges[1]);
             }
         }
 
@@ -121,11 +144,10 @@ public class FileHandler extends AbstractHttpHandler {
         private void responseRageFile(File file, ChannelHandlerContext ctx, long start, long end) throws IOException {
             long contentSize = end - start + 1;
             String mimeType = TIKA.detect(file);
-            DefaultHttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.PARTIAL_CONTENT);
+            DefaultHttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
             response.headers().set(HttpHeaderNames.CONTENT_TYPE, mimeType);
             response.headers().set(HttpHeaderNames.CONTENT_LENGTH, contentSize);
             response.headers().set(HttpHeaderNames.CONTENT_RANGE, "bytes " + start + "-" + end + "/" + file.length());
-            ctx.writeAndFlush(response);
             if (Config.SSL_ENABLED) {
                 ctx.writeAndFlush(new HttpChunkedInput(new ChunkedFile(new RandomAccessFile(file, "r"), start, contentSize, Config.FILE_CHUNK_SIZE)));
             } else {
@@ -143,15 +165,18 @@ public class FileHandler extends AbstractHttpHandler {
         }
     }
 
+    /**
+     * 文件上传工具
+     */
     private static class FileUploader {
         private FileChannel fileChannel;
         private long fileSize = 0;
         private long writtenSize = 0;
 
-        protected void handleHeader(ChannelHandlerContext ctx, WrappedHttpRequest msg) throws Exception {
-            fileSize = Long.parseLong(msg.headers().get(HttpHeaderNames.CONTENT_LENGTH));
-            String fileName = msg.getParam("fileName");
-            String contentType = msg.headers().get(HttpHeaderNames.CONTENT_TYPE);
+        protected void handleHeader(ChannelHandlerContext ctx, WrappedHttpRequest request) throws Exception {
+            fileSize = Long.parseLong(request.headers().get(HttpHeaderNames.CONTENT_LENGTH));
+            String fileName = request.getParam("fileName");
+            String contentType = request.headers().get(HttpHeaderNames.CONTENT_TYPE);
             String fileType = contentType.substring(contentType.lastIndexOf('/') + 1);
             if (fileName == null) {
                 throw new NullPointerException();
@@ -160,16 +185,10 @@ public class FileHandler extends AbstractHttpHandler {
             fileChannel = new FileOutputStream(filePath).getChannel();
         }
 
-        protected boolean handleContent(ChannelHandlerContext ctx, DefaultHttpContent msg) throws Exception {
-            writtenSize += msg.content().readableBytes();
-            fileChannel.write(msg.content().nioBuffer());
-            if (writtenSize == fileSize) {
-                DefaultFullHttpResponse res = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
-                res.headers().set(HttpHeaderNames.CONTENT_LENGTH, "0");
-                ctx.channel().writeAndFlush(res);
-                return true;
-            }
-            return false;
+        protected boolean handleContent(ChannelHandlerContext ctx, WrappedHttpContent request) throws Exception {
+            writtenSize += request.content().readableBytes();
+            fileChannel.write(request.content().nioBuffer());
+            return writtenSize == fileSize;
         }
 
         protected void close() throws Exception {
@@ -181,13 +200,18 @@ public class FileHandler extends AbstractHttpHandler {
         }
     }
 
-    @Override
-    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-        FileUploader uploader = UP_LOADERS.get(ctx.channel().id());
+
+    /**
+     * 关闭并将uploader移除
+     *
+     * @param ctx 上下文
+     */
+    private void closeAndRemoveUploader(ChannelHandlerContext ctx) throws Exception {
+        HashMap<ChannelId, FileUploader> upLoaders = UP_LOADERS.get();
+        FileUploader uploader = upLoaders.get(ctx.channel().id());
         if (uploader != null) {
             uploader.close();
-            UP_LOADERS.remove(ctx.channel().id());
+            upLoaders.remove(ctx.channel().id());
         }
-        super.channelInactive(ctx);
     }
 }

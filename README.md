@@ -51,8 +51,8 @@
                        method: 'post',
                        data: this.file
                    }).
-                   then((response) => {
-                       console.log(response)
+                   then((delegate) => {
+                       console.log(delegate)
                    }).
                    catch((error) => {
                        console.log(error)

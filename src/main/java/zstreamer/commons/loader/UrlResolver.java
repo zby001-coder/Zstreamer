@@ -1,6 +1,7 @@
-package zstreamer.commons.util;
+package zstreamer.commons.loader;
 
 import zstreamer.commons.Config;
+import zstreamer.commons.util.UrlTool;
 
 import java.util.HashMap;
 
@@ -14,33 +15,25 @@ public class UrlResolver {
     private UrlResolver() {
     }
 
-    public String getRawUrl(String url) {
-        url = removeSpace(url);
-        int paramStart = url.indexOf('?');
-        String path = "";
-        if (paramStart != -1) {
-            path = url.substring(0, paramStart);
-        } else {
-            path = url;
-        }
-        return path;
-    }
-
     public RestfulUrl resolveUrl(String url, String urlPattern) {
-        RestfulUrl result = resolveFilters(url);
+        RestfulUrl result = resolveTailParams(url);
         String[] rawPrefixes = result.url.split("/");
         String[] patternPrefixes = urlPattern.split("/");
         for (int i = 0; i < rawPrefixes.length; i++) {
-            if (patternPrefixes[i].startsWith(Config.PLACE_HOLDER_START) && patternPrefixes[i].endsWith(Config.PLACE_HOLDER_END)) {
-                String key = patternPrefixes[i].substring(Config.PLACE_HOLDER_START.length(), patternPrefixes[i].length() - Config.PLACE_HOLDER_END.length());
+            String prefix = patternPrefixes[i];
+            if (prefix.length() < 2) {
+                continue;
+            }
+            if (prefix.charAt(0) == Config.PLACE_HOLDER_START && prefix.charAt(prefix.length() - 1) == Config.PLACE_HOLDER_END) {
+                String key = prefix.substring(1, prefix.length() - 1);
                 result.params.put(key, rawPrefixes[i]);
             }
         }
         return result;
     }
 
-    private RestfulUrl resolveFilters(String url) {
-        url = removeSpace(url);
+    private RestfulUrl resolveTailParams(String url) {
+        url = UrlTool.removeSpace(url);
         int paramStart = url.indexOf('?');
         String path = "";
         String paramStr = "";
@@ -51,17 +44,6 @@ public class UrlResolver {
             path = url;
         }
         return new RestfulUrl(path, resolveParams(paramStr));
-    }
-
-
-    private String removeSpace(String url) {
-        StringBuilder sb = new StringBuilder(url.length());
-        for (char c : url.toCharArray()) {
-            if (c != ' ') {
-                sb.append(c);
-            }
-        }
-        return sb.toString();
     }
 
     private HashMap<String, String> resolveParams(String paramStr) {

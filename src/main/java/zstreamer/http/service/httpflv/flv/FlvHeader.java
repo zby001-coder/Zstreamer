@@ -1,4 +1,4 @@
-package zstreamer.http.httpflv.flv;
+package zstreamer.http.service.httpflv.flv;
 
 /**
  * @author 张贝易
