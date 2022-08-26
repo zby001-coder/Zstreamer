@@ -8,6 +8,8 @@ import io.netty.handler.codec.http.DefaultHttpRequest;
 import io.netty.handler.codec.http.DefaultHttpResponse;
 import io.netty.util.ReferenceCountUtil;
 import zstreamer.commons.loader.UrlClassTier;
+import zstreamer.commons.util.InstanceTool;
+import zstreamer.http.entity.HttpEvent;
 import zstreamer.http.entity.MessageInfo;
 import zstreamer.http.filter.AbstractHttpFilter;
 
@@ -17,6 +19,10 @@ import java.util.concurrent.ConcurrentHashMap;
 @ChannelHandler.Sharable
 public class FilterExecutor extends ChannelDuplexHandler {
     private static final FilterExecutor INSTANCE = new FilterExecutor();
+    /**
+     * 已经实例化过的单例Filter的缓存
+     */
+    private static final ConcurrentHashMap<Class<AbstractHttpFilter>, AbstractHttpFilter> INSTANCED_FILTERS = new ConcurrentHashMap<>();
 
     public static FilterExecutor getInstance() {
         return INSTANCE;
@@ -28,11 +34,12 @@ public class FilterExecutor extends ChannelDuplexHandler {
             ctx.fireChannelRead(msg);
             return;
         }
-        List<UrlClassTier.ClassInfo<AbstractHttpFilter>> filterInfo = getCurrentMessage(ctx).getFilterInfo();
+        List<UrlClassTier.ClassInfo<AbstractHttpFilter>> filterInfo = ContextHandler.getMessageInfo(ctx).getFilterInfo();
         for (UrlClassTier.ClassInfo<AbstractHttpFilter> info : filterInfo) {
             AbstractHttpFilter filter = instanceFilter(info.getClz());
             if (!filter.handleIn(ctx, (DefaultHttpRequest) msg)) {
                 ReferenceCountUtil.release(msg);
+                ctx.fireUserEventTriggered(HttpEvent.FAIL_FILTER);
                 return;
             }
         }
@@ -45,7 +52,13 @@ public class FilterExecutor extends ChannelDuplexHandler {
             ctx.write(msg);
             return;
         }
-        List<UrlClassTier.ClassInfo<AbstractHttpFilter>> filterInfo = getCurrentMessage(ctx).getFilterInfo();
+        MessageInfo messageInfo = ContextHandler.getMessageInfo(ctx);
+        if (messageInfo == null) {
+            ctx.write(msg);
+            return;
+        }
+
+        List<UrlClassTier.ClassInfo<AbstractHttpFilter>> filterInfo = ContextHandler.getMessageInfo(ctx).getFilterInfo();
         for (UrlClassTier.ClassInfo<AbstractHttpFilter> info : filterInfo) {
             AbstractHttpFilter filter = instanceFilter(info.getClz());
             filter.handleOut((DefaultHttpResponse) msg);
@@ -53,27 +66,7 @@ public class FilterExecutor extends ChannelDuplexHandler {
         ctx.write(msg);
     }
 
-    private MessageInfo getCurrentMessage(ChannelHandlerContext ctx) {
-        return ctx.pipeline().get(RequestResolver.class).getMessageInfo(ctx);
-    }
-
     private AbstractHttpFilter instanceFilter(Class<AbstractHttpFilter> clz) throws InstantiationException, IllegalAccessException {
-        ConcurrentHashMap<Class<AbstractHttpFilter>, AbstractHttpFilter> instancedFilters = ContextHandler.INSTANCED_FILTERS;
-        AbstractHttpFilter filter = null;
-        if (!instancedFilters.containsKey(clz)) {
-            //没有实例化过，进行实例化
-            synchronized (this) {
-                if (!instancedFilters.containsKey(clz)) {
-                    filter = clz.newInstance();
-                    instancedFilters.put(clz, filter);
-                } else {
-                    filter = instancedFilters.get(clz);
-                }
-            }
-        } else {
-            //从实例化过的handler中获取
-            filter = instancedFilters.get(clz);
-        }
-        return filter;
+        return InstanceTool.instanceSingleton(INSTANCED_FILTERS, clz);
     }
 }

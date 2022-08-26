@@ -3,9 +3,12 @@ package zstreamer.http;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.handler.codec.http.*;
+import io.netty.handler.codec.http.DefaultHttpObject;
+import zstreamer.commons.util.InstanceTool;
 import zstreamer.http.entity.MessageInfo;
 import zstreamer.http.service.AbstractHttpHandler;
+
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author 张贝易
@@ -13,7 +16,11 @@ import zstreamer.http.service.AbstractHttpHandler;
  */
 @ChannelHandler.Sharable
 public class RequestDispatcher extends SimpleChannelInboundHandler<DefaultHttpObject> {
-  
+    /**
+     * 已经实例化过的单例Handler的缓存
+     */
+    public static final ConcurrentHashMap<Class<AbstractHttpHandler>, AbstractHttpHandler> INSTANCED_HANDLERS = new ConcurrentHashMap<>();
+
     private static final RequestDispatcher INSTANCE = new RequestDispatcher();
 
     private RequestDispatcher() {
@@ -27,24 +34,7 @@ public class RequestDispatcher extends SimpleChannelInboundHandler<DefaultHttpOb
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, DefaultHttpObject msg) throws Exception {
         AbstractHttpHandler handler = getServiceHandler(ctx);
-        if(handler==null){
-            responseNoFound(ctx);
-            return;
-        }
         handler.channelRead(ctx, msg);
-    }
-
-    /**
-     * 响应404的信息
-     *
-     * @param ctx 上下文
-     */
-    private void responseNoFound(ChannelHandlerContext ctx) {
-        DefaultFullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.NOT_FOUND);
-        response.headers().set(HttpHeaderNames.CONTENT_LENGTH, 0);
-        ctx.writeAndFlush(response);
-        //不处理下面的content
-        ctx.pipeline().get(RequestResolver.class).getMessageInfo(ctx).setState(MessageInfo.DISABLED);
     }
 
     /**
@@ -69,10 +59,14 @@ public class RequestDispatcher extends SimpleChannelInboundHandler<DefaultHttpOb
     }
 
     private AbstractHttpHandler getServiceHandler(ChannelHandlerContext ctx) throws Exception {
-        MessageInfo info = ctx.pipeline().get(RequestResolver.class).getMessageInfo(ctx);
+        MessageInfo info = ContextHandler.getMessageInfo(ctx);
         //获取对应的class信息
         Class<AbstractHttpHandler> clz = info.getClassInfo().getClz();
         //获取url对应的handler
-        return ContextHandler.instanceHandler(clz);
+        return instanceHandler(clz);
+    }
+
+    private AbstractHttpHandler instanceHandler(Class<AbstractHttpHandler> clz) throws InstantiationException, IllegalAccessException {
+        return InstanceTool.instanceSingleton(INSTANCED_HANDLERS, clz);
     }
 }

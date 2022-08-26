@@ -5,6 +5,7 @@ import io.netty.channel.ChannelId;
 import io.netty.handler.codec.http.*;
 import zstreamer.MediaMessagePool;
 import zstreamer.commons.annotation.RequestPath;
+import zstreamer.http.ContextHandler;
 import zstreamer.http.entity.MessageInfo;
 import zstreamer.http.service.AbstractHttpHandler;
 import zstreamer.http.service.ChunkWriter;
@@ -22,7 +23,7 @@ public class AudienceHandler extends AbstractHttpHandler {
 
     @Override
     protected boolean handleGet(ChannelHandlerContext ctx, DefaultHttpObject msg) throws Exception {
-        MessageInfo currentInfo = getCurrentInfo(ctx);
+        MessageInfo currentInfo = ContextHandler.getMessageInfo(ctx);
         String roomName = currentInfo.getRestfulUrl().getParam("roomName");
         Audience audience = new Audience(ctx.channel(), MediaMessagePool.getStreamer(roomName));
         AUDIENCE_MAP.put(ctx.channel().id(), audience);

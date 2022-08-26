@@ -10,11 +10,12 @@ import zstreamer.commons.loader.FilterClassResolver;
 import zstreamer.commons.loader.HandlerClassResolver;
 import zstreamer.commons.loader.UrlClassTier;
 import zstreamer.commons.loader.UrlResolver;
+import zstreamer.http.entity.HttpEvent;
 import zstreamer.http.entity.MessageInfo;
+import zstreamer.http.entity.MessageState;
 import zstreamer.http.filter.AbstractHttpFilter;
 import zstreamer.http.service.AbstractHttpHandler;
 
-import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -23,7 +24,7 @@ import java.util.List;
  */
 @ChannelHandler.Sharable
 public class RequestResolver extends SimpleChannelInboundHandler<DefaultHttpObject> {
-    
+
     private static final RequestResolver INSTANCE = new RequestResolver();
 
     private RequestResolver() {
@@ -33,26 +34,10 @@ public class RequestResolver extends SimpleChannelInboundHandler<DefaultHttpObje
         return INSTANCE;
     }
 
-    public MessageInfo getMessageInfo(ChannelHandlerContext ctx) {
-        return ContextHandler.INFO_MAP.get().get(ctx.channel().id());
-    }
-
-    /**
-     * channel启动时初始化ThreadLocal的信息
-     *
-     * @param ctx 上下文
-     */
-    @Override
-    public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        if (ContextHandler.INFO_MAP.get() == null) {
-            ContextHandler.INFO_MAP.set(new HashMap<>());
-        }
-        super.channelActive(ctx);
-    }
-
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, DefaultHttpObject msg) throws Exception {
         if (msg instanceof DefaultHttpRequest) {
+            ctx.fireUserEventTriggered(HttpEvent.START);
             handleHeader(ctx, (DefaultHttpRequest) msg);
         } else {
             handleContent(ctx, (DefaultHttpContent) msg);
@@ -70,15 +55,18 @@ public class RequestResolver extends SimpleChannelInboundHandler<DefaultHttpObje
         String url = msg.uri();
         UrlClassTier.ClassInfo<AbstractHttpHandler> handlerInfo = HandlerClassResolver.getInstance().resolveHandler(url);
         if (handlerInfo != null) {
+            ctx.fireUserEventTriggered(HttpEvent.FIND_SERVICE);
             List<UrlClassTier.ClassInfo<AbstractHttpFilter>> filterInfo = FilterClassResolver.getInstance().resolveFilter(handlerInfo.getUrlPattern());
             //将url中的参数解析出来，包装后传递下去
             UrlResolver.RestfulUrl restfulUrl = UrlResolver.getInstance().resolveUrl(url, handlerInfo.getUrlPattern());
-            //设置请求的状态
+            //设置请求的信息
             MessageInfo messageInfo = new MessageInfo(msg.method(), restfulUrl, handlerInfo, filterInfo);
-            messageInfo.setState(MessageInfo.RECEIVED_HEADER);
-            ContextHandler.INFO_MAP.get().put(ctx.channel().id(), messageInfo);
+            ContextHandler.putMessageInfo(ctx, messageInfo);
             //传递消息
             ctx.fireChannelRead(msg);
+        } else {
+            //没有对应的handler，报404
+            ctx.fireUserEventTriggered(HttpEvent.NOT_FOUND);
         }
     }
 
@@ -89,19 +77,10 @@ public class RequestResolver extends SimpleChannelInboundHandler<DefaultHttpObje
      * @param msg 请求体
      */
     private void handleContent(ChannelHandlerContext ctx, DefaultHttpContent msg) throws Exception {
-        //根据当前请求使用的handler分发请求体
-        MessageInfo messageInfo = ContextHandler.INFO_MAP.get().get(ctx.channel().id());
-        //传递content
-        int state = messageInfo.getState();
-        if (state != MessageInfo.DISABLED) {
+        MessageState state = ContextHandler.getMessageState(ctx);
+        if (!(state instanceof MessageState.Disabled)) {
             ctx.fireChannelRead(msg);
         }
         //如果当前请求的state被置为disabled，就不处理下面的数据了
-    }
-
-    @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-        //下层业务handler抛出异常，将当前请求设置为不处理
-        ContextHandler.INFO_MAP.get().get(ctx.channel().id()).setState(MessageInfo.DISABLED);
     }
 }

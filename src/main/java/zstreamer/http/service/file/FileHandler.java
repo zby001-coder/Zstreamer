@@ -9,6 +9,7 @@ import io.netty.util.concurrent.FastThreadLocal;
 import org.apache.tika.Tika;
 import zstreamer.commons.Config;
 import zstreamer.commons.annotation.RequestPath;
+import zstreamer.http.ContextHandler;
 import zstreamer.http.service.AbstractHttpHandler;
 
 import java.io.File;
@@ -92,7 +93,7 @@ public class FileHandler extends AbstractHttpHandler {
      */
     private static class FileDownLoader {
         protected void handleHeader(ChannelHandlerContext ctx, DefaultHttpRequest request) throws IOException {
-            String fileName = getCurrentInfo(ctx).getRestfulUrl().getParam("fileName");
+            String fileName = ContextHandler.getMessageInfo(ctx).getRestfulUrl().getParam("fileName");
             String range = request.headers().get(HttpHeaderNames.RANGE);
             if (fileName == null) {
                 throw new NullPointerException();
@@ -172,7 +173,7 @@ public class FileHandler extends AbstractHttpHandler {
 
         protected void handleHeader(ChannelHandlerContext ctx, DefaultHttpRequest request) throws Exception {
             fileSize = Long.parseLong(request.headers().get(HttpHeaderNames.CONTENT_LENGTH));
-            String fileName = getCurrentInfo(ctx).getRestfulUrl().getParam("fileName");
+            String fileName = ContextHandler.getMessageInfo(ctx).getRestfulUrl().getParam("fileName");
             String contentType = request.headers().get(HttpHeaderNames.CONTENT_TYPE);
             String fileType = contentType.substring(contentType.lastIndexOf('/') + 1);
             if (fileName == null) {
