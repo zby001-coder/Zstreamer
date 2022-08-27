@@ -37,7 +37,7 @@ public class RequestResolver extends SimpleChannelInboundHandler<DefaultHttpObje
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, DefaultHttpObject msg) throws Exception {
         if (msg instanceof DefaultHttpRequest) {
-            ctx.fireUserEventTriggered(HttpEvent.START);
+            ctx.fireUserEventTriggered(HttpEvent.RECEIVE_REQUEST);
             handleHeader(ctx, (DefaultHttpRequest) msg);
         } else {
             handleContent(ctx, (DefaultHttpContent) msg);
@@ -55,7 +55,6 @@ public class RequestResolver extends SimpleChannelInboundHandler<DefaultHttpObje
         String url = msg.uri();
         UrlClassTier.ClassInfo<AbstractHttpHandler> handlerInfo = HandlerClassResolver.getInstance().resolveHandler(url);
         if (handlerInfo != null) {
-            ctx.fireUserEventTriggered(HttpEvent.FIND_SERVICE);
             List<UrlClassTier.ClassInfo<AbstractHttpFilter>> filterInfo = FilterClassResolver.getInstance().resolveFilter(handlerInfo.getUrlPattern());
             //将url中的参数解析出来，包装后传递下去
             UrlResolver.RestfulUrl restfulUrl = UrlResolver.getInstance().resolveUrl(url, handlerInfo.getUrlPattern());
@@ -78,7 +77,7 @@ public class RequestResolver extends SimpleChannelInboundHandler<DefaultHttpObje
      */
     private void handleContent(ChannelHandlerContext ctx, DefaultHttpContent msg) throws Exception {
         MessageState state = ContextHandler.getMessageState(ctx);
-        if (!(state instanceof MessageState.Disabled)) {
+        if (!(state instanceof MessageState.WaitRequest)) {
             ctx.fireChannelRead(msg);
         }
         //如果当前请求的state被置为disabled，就不处理下面的数据了

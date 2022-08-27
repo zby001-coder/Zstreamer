@@ -25,7 +25,7 @@ public class ResponseListener extends ChannelOutboundHandlerAdapter {
     @Override
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
         if (msg instanceof DefaultHttpResponse) {
-            ctx.fireUserEventTriggered(HttpEvent.RESPOND_HEADER);
+            ctx.fireUserEventTriggered(HttpEvent.SEND_HEAD);
         }
         super.write(ctx, msg, promise);
     }

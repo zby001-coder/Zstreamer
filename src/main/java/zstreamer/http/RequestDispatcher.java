@@ -4,7 +4,9 @@ import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http.DefaultHttpObject;
+import io.netty.handler.codec.http.DefaultHttpRequest;
 import zstreamer.commons.util.InstanceTool;
+import zstreamer.http.entity.HttpEvent;
 import zstreamer.http.entity.MessageInfo;
 import zstreamer.http.service.AbstractHttpHandler;
 
@@ -34,6 +36,16 @@ public class RequestDispatcher extends SimpleChannelInboundHandler<DefaultHttpOb
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, DefaultHttpObject msg) throws Exception {
         AbstractHttpHandler handler = getServiceHandler(ctx);
+        if (msg instanceof DefaultHttpRequest) {
+            if (handler != null) {
+                ctx.fireUserEventTriggered(HttpEvent.DISPATCH_REQUEST);
+            } else {
+                ctx.fireUserEventTriggered(HttpEvent.NOT_FOUND);
+            }
+        }
+        if (handler == null) {
+            return;
+        }
         handler.channelRead(ctx, msg);
     }
 
@@ -46,7 +58,10 @@ public class RequestDispatcher extends SimpleChannelInboundHandler<DefaultHttpOb
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
         //触发当前业务handler的关闭事件
-        getServiceHandler(ctx).channelInactive(ctx);
+        AbstractHttpHandler serviceHandler = getServiceHandler(ctx);
+        if (serviceHandler != null) {
+            serviceHandler.channelInactive(ctx);
+        }
     }
 
     /**
@@ -55,11 +70,17 @@ public class RequestDispatcher extends SimpleChannelInboundHandler<DefaultHttpOb
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
         //触发业务handler的异常处理流程
-        getServiceHandler(ctx).exceptionCaught(ctx, cause);
+        AbstractHttpHandler serviceHandler = getServiceHandler(ctx);
+        if (serviceHandler != null) {
+            serviceHandler.exceptionCaught(ctx, cause);
+        }
     }
 
     private AbstractHttpHandler getServiceHandler(ChannelHandlerContext ctx) throws Exception {
         MessageInfo info = ContextHandler.getMessageInfo(ctx);
+        if (info == null){
+            return null;
+        }
         //获取对应的class信息
         Class<AbstractHttpHandler> clz = info.getClassInfo().getClz();
         //获取url对应的handler

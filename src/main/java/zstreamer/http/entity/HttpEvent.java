@@ -4,12 +4,12 @@ public enum HttpEvent {
     /**
      *
      */
-    START,
-    FIND_SERVICE,
-    RESPOND_HEADER,
+    RECEIVE_REQUEST,
+    DISPATCH_REQUEST,
+    SEND_HEAD,
     FAIL_FILTER,
+    FINISH_RESPONSE,
     NOT_FOUND,
     WRONG_METHOD,
-    FINISH_RESPONSE,
     EXCEPTION
 }

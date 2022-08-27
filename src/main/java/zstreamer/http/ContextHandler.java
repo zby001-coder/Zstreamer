@@ -63,13 +63,14 @@ public class ContextHandler extends ChannelDuplexHandler {
             MESSAGE_STATE.set(new HashMap<>());
         }
         MESSAGE_STATE.get().put(ctx.channel().id(), MessageState.initState());
-        super.channelActive(ctx);
+        ctx.fireChannelActive();
     }
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
         //删除当前HTTP请求信息
         ContextHandler.INFO_MAP.get().remove(ctx.channel().id());
+        ContextHandler.MESSAGE_STATE.get().remove(ctx.channel().id());
         ctx.fireChannelInactive();
     }
 
@@ -91,19 +92,27 @@ public class ContextHandler extends ChannelDuplexHandler {
         MESSAGE_STATE.get().put(ctx.channel().id(), newState);
         switch (event) {
             case NOT_FOUND:
-                ctx.writeAndFlush(InstanceTool.getNotFoundResponse());
+                ctx.writeAndFlush(InstanceTool.getNotFoundResponse()).addListener((future) -> {
+                    MessageState state = MESSAGE_STATE.get().get(ctx.channel().id());
+                    MESSAGE_STATE.get().put(ctx.channel().id(), state.changeState(HttpEvent.FINISH_RESPONSE));
+                });
                 return;
             case EXCEPTION:
-                ctx.writeAndFlush(InstanceTool.getExceptionResponse());
+                ctx.writeAndFlush(InstanceTool.getExceptionResponse()).addListener((future) -> {
+                    MessageState state = MESSAGE_STATE.get().get(ctx.channel().id());
+                    MESSAGE_STATE.get().put(ctx.channel().id(), state.changeState(HttpEvent.FINISH_RESPONSE));
+                });
                 return;
             case WRONG_METHOD:
-                ctx.writeAndFlush(InstanceTool.getWrongMethodResponse());
+                ctx.writeAndFlush(InstanceTool.getWrongMethodResponse()).addListener((future) -> {
+                    MessageState state = MESSAGE_STATE.get().get(ctx.channel().id());
+                    MESSAGE_STATE.get().put(ctx.channel().id(), state.changeState(HttpEvent.FINISH_RESPONSE));
+                });
                 return;
             default:
                 break;
         }
         if (newState instanceof MessageState.Error) {
-            ctx.writeAndFlush(InstanceTool.getExceptionResponse());
             ctx.channel().close();
         }
     }

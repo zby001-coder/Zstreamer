@@ -5,8 +5,8 @@ package zstreamer.http.entity;
  * 请求/响应的状态
  */
 public abstract class MessageState {
-    public static Disabled initState() {
-        return Disabled.DISABLED;
+    public static WaitRequest initState() {
+        return WaitRequest.WAIT_REQUEST;
     }
 
     public MessageState() {
@@ -20,82 +20,87 @@ public abstract class MessageState {
      */
     public abstract MessageState changeState(HttpEvent event);
 
-    public static class Disabled extends MessageState {
-        private static final Disabled DISABLED = new Disabled();
+    public static class WaitRequest extends MessageState {
+        private static final WaitRequest WAIT_REQUEST = new WaitRequest();
 
-        private Disabled() {
+        private WaitRequest() {
 
         }
 
         @Override
         public MessageState changeState(HttpEvent event) {
-            switch (event) {
-                case START:
-                    return ReceivedHead.RECEIVED_HEAD;
-                case EXCEPTION:
-                    return DISABLED;
-                default:
-                    return Error.ERROR;
+            if (event == HttpEvent.RECEIVE_REQUEST) {
+                return ReceivedRequest.RECEIVED_REQUEST;
             }
+            return Error.ERROR;
         }
     }
 
-    public static class ReceivedHead extends MessageState {
-        private static final ReceivedHead RECEIVED_HEAD = new ReceivedHead();
+    public static class ReceivedRequest extends MessageState {
+        private static final ReceivedRequest RECEIVED_REQUEST = new ReceivedRequest();
 
-        private ReceivedHead() {
+        private ReceivedRequest() {
         }
 
         @Override
         public MessageState changeState(HttpEvent event) {
             switch (event) {
-                case FIND_SERVICE:
-                    return ServiceFound.SERVICE_FOUND;
+                case DISPATCH_REQUEST:
+                    return WaitResponse.WAIT_RESPONSE;
                 case NOT_FOUND:
                 case EXCEPTION:
-                    return Disabled.DISABLED;
+                case FAIL_FILTER:
+                    return HandleException.HANDLE_EXCEPTION;
                 default:
                     return Error.ERROR;
             }
         }
     }
 
-    public static class ServiceFound extends MessageState {
-        private static final ServiceFound SERVICE_FOUND = new ServiceFound();
+    public static class WaitResponse extends MessageState {
+        private static final WaitResponse WAIT_RESPONSE = new WaitResponse();
 
-        private ServiceFound() {
+        private WaitResponse() {
         }
 
         @Override
         public MessageState changeState(HttpEvent event) {
             switch (event) {
-                case RESPOND_HEADER:
-                    return RespondedHead.RESPONDED_HEAD;
-                case FAIL_FILTER:
+                case SEND_HEAD:
+                    return SendingResponse.SENDING_RESPONSE;
                 case EXCEPTION:
                 case WRONG_METHOD:
-                    return Disabled.DISABLED;
+                    return HandleException.HANDLE_EXCEPTION;
                 default:
                     return Error.ERROR;
             }
         }
     }
 
-    public static class RespondedHead extends MessageState {
-        private static final RespondedHead RESPONDED_HEAD = new RespondedHead();
+    public static class HandleException extends MessageState {
+        private static final HandleException HANDLE_EXCEPTION = new HandleException();
 
-        private RespondedHead() {
+        private HandleException() {
         }
 
         @Override
         public MessageState changeState(HttpEvent event) {
-            switch (event) {
-                case FINISH_RESPONSE:
-                case EXCEPTION:
-                    return Disabled.DISABLED;
-                default:
-                    return Error.ERROR;
+            if (event == HttpEvent.SEND_HEAD) {
+                return SendingResponse.SENDING_RESPONSE;
             }
+            return Error.ERROR;
+        }
+    }
+
+    public static class SendingResponse extends MessageState {
+        private static final SendingResponse SENDING_RESPONSE = new SendingResponse();
+
+        @Override
+        public MessageState changeState(HttpEvent event) {
+            if (event == HttpEvent.FINISH_RESPONSE) {
+                return WaitRequest.WAIT_REQUEST;
+            }
+            return Error.ERROR;
         }
     }
 

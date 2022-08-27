@@ -49,12 +49,12 @@ public class FilterExecutor extends ChannelDuplexHandler {
     @Override
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
         if (!(msg instanceof DefaultHttpResponse)) {
-            ctx.write(msg);
+            ctx.write(msg,promise);
             return;
         }
         MessageInfo messageInfo = ContextHandler.getMessageInfo(ctx);
         if (messageInfo == null) {
-            ctx.write(msg);
+            ctx.write(msg,promise);
             return;
         }
 
@@ -63,7 +63,7 @@ public class FilterExecutor extends ChannelDuplexHandler {
             AbstractHttpFilter filter = instanceFilter(info.getClz());
             filter.handleOut((DefaultHttpResponse) msg);
         }
-        ctx.write(msg);
+        ctx.write(msg,promise);
     }
 
     private AbstractHttpFilter instanceFilter(Class<AbstractHttpFilter> clz) throws InstantiationException, IllegalAccessException {
