@@ -1,6 +1,5 @@
 package zstreamer;
 
-import zstreamer.http.service.httpflv.Audience;
 import zstreamer.rtmp.Streamer;
 import zstreamer.rtmp.message.messageType.media.DataMessage;
 import zstreamer.rtmp.message.messageType.media.MediaMessage;
@@ -36,21 +35,6 @@ public class MediaMessagePool {
 
     public static Streamer getStreamer(String roomName){
         return STREAMER.get(roomName);
-    }
-
-    public static boolean registerAudience(String roomName, Audience audience) {
-        Streamer streamer = STREAMER.get(roomName);
-        if (streamer != null) {
-            return streamer.registerAudience(audience);
-        }
-        return false;
-    }
-
-    public static void unRegisterAudience(String roomName, Audience audience) {
-        Streamer streamer = STREAMER.get(roomName);
-        if (streamer != null) {
-            streamer.unregisterAudience(audience);
-        }
     }
 
     public static void createRoom(String roomName, Streamer streamer) {

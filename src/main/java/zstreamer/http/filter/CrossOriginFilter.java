@@ -1,8 +1,10 @@
 package zstreamer.http.filter;
 
-import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.*;
 import zstreamer.commons.annotation.FilterPath;
+import zstreamer.commons.util.InstanceTool;
+import zstreamer.http.entity.request.WrappedRequest;
+import zstreamer.http.entity.response.AbstractWrappedResponse;
 
 /**
  * @author 张贝易
@@ -12,19 +14,16 @@ import zstreamer.commons.annotation.FilterPath;
 public class CrossOriginFilter extends AbstractHttpFilter {
 
     @Override
-    public boolean handleIn(ChannelHandlerContext ctx, DefaultHttpRequest request) {
+    public AbstractWrappedResponse handleIn(WrappedRequest request) {
         if (request.method().equals(HttpMethod.OPTIONS)) {
-            DefaultFullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
-            response.headers().set(HttpHeaderNames.CONTENT_LENGTH, "0");
-            ctx.writeAndFlush(response);
-            return false;
+            return InstanceTool.getEmptyOkResponse(request);
         }
-        return true;
+        return null;
     }
 
     @Override
-    public void handleOut(DefaultHttpResponse response) {
-        response.headers()
+    public void handleOut(AbstractWrappedResponse response) {
+        response.getDelegate().headers()
                 .set(HttpHeaderNames.ACCESS_CONTROL_ALLOW_ORIGIN, "*")
                 .set(HttpHeaderNames.ACCESS_CONTROL_ALLOW_METHODS, "*")
                 .set(HttpHeaderNames.ACCESS_CONTROL_ALLOW_HEADERS, "*")

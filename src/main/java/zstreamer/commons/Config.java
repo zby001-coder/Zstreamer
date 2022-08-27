@@ -32,5 +32,6 @@ public class Config {
      * 文件分片传输时的分片大小
      */
     public static final int FILE_CHUNK_SIZE = 8192;
-
+    public static final int CHUNK_RESPONSE_FAIL_MAX_TIME = 10;
+    public static final int CHUNK_RESPONSE_RETRY_INTERVAL = 10;
 }

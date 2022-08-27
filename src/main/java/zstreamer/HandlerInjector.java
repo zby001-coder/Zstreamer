@@ -9,13 +9,13 @@ import io.netty.handler.stream.ChunkedWriteHandler;
 import io.netty.handler.traffic.ChannelTrafficShapingHandler;
 import zstreamer.commons.Config;
 import zstreamer.http.*;
-import zstreamer.ssl.SslHandlerBuilder;
 import zstreamer.rtmp.chunk.ChunkCodec;
 import zstreamer.rtmp.handshake.RtmpHandShaker;
 import zstreamer.rtmp.message.codec.RtmpMessageDecoder;
 import zstreamer.rtmp.message.codec.RtmpMessageEncoder;
 import zstreamer.rtmp.message.handlers.MessageHandlerInitializer;
 import zstreamer.rtmp.message.handlers.control.AckSenderReceiver;
+import zstreamer.ssl.SslHandlerBuilder;
 
 import javax.net.ssl.SSLException;
 import java.net.InetSocketAddress;
@@ -56,11 +56,11 @@ public class HandlerInjector extends ChannelInitializer<SocketChannel> {
         pipeline
                 .addLast(new HttpServerCodec())
                 .addLast(new ChunkedWriteHandler())
-                .addLast(ResponseListener.getInstance())
+                .addLast(ResponseResolver.getInstance())
                 .addLast(RequestResolver.getInstance())
                 .addLast(FilterExecutor.getInstance())
                 .addLast(RequestDispatcher.getInstance())
-                .addLast(ContextHandler.getInstance());
+                .addLast(StateHandler.getInstance());
     }
 
     private void initRtmp(ChannelPipeline pipeline) {

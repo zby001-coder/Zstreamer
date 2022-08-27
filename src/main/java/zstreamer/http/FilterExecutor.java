@@ -4,13 +4,11 @@ import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
-import io.netty.handler.codec.http.DefaultHttpRequest;
-import io.netty.handler.codec.http.DefaultHttpResponse;
 import io.netty.util.ReferenceCountUtil;
 import zstreamer.commons.loader.UrlClassTier;
 import zstreamer.commons.util.InstanceTool;
-import zstreamer.http.entity.HttpEvent;
-import zstreamer.http.entity.MessageInfo;
+import zstreamer.http.entity.request.WrappedRequest;
+import zstreamer.http.entity.response.AbstractWrappedResponse;
 import zstreamer.http.filter.AbstractHttpFilter;
 
 import java.util.List;
@@ -30,16 +28,13 @@ public class FilterExecutor extends ChannelDuplexHandler {
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-        if (!(msg instanceof DefaultHttpRequest)) {
-            ctx.fireChannelRead(msg);
-            return;
-        }
-        List<UrlClassTier.ClassInfo<AbstractHttpFilter>> filterInfo = ContextHandler.getMessageInfo(ctx).getFilterInfo();
+        List<UrlClassTier.ClassInfo<AbstractHttpFilter>> filterInfo = ((WrappedRequest) msg).getFilterInfo();
         for (UrlClassTier.ClassInfo<AbstractHttpFilter> info : filterInfo) {
             AbstractHttpFilter filter = instanceFilter(info.getClz());
-            if (!filter.handleIn(ctx, (DefaultHttpRequest) msg)) {
+            AbstractWrappedResponse response = filter.handleIn((WrappedRequest) msg);
+            if (response != null) {
                 ReferenceCountUtil.release(msg);
-                ctx.fireUserEventTriggered(HttpEvent.FAIL_FILTER);
+                ctx.channel().writeAndFlush(response);
                 return;
             }
         }
@@ -48,22 +43,14 @@ public class FilterExecutor extends ChannelDuplexHandler {
 
     @Override
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
-        if (!(msg instanceof DefaultHttpResponse)) {
-            ctx.write(msg,promise);
-            return;
+        List<UrlClassTier.ClassInfo<AbstractHttpFilter>> filterInfo = ((AbstractWrappedResponse) msg).getRequestInfo().getFilterInfo();
+        if (filterInfo != null) {
+            for (UrlClassTier.ClassInfo<AbstractHttpFilter> info : filterInfo) {
+                AbstractHttpFilter filter = instanceFilter(info.getClz());
+                filter.handleOut((AbstractWrappedResponse) msg);
+            }
         }
-        MessageInfo messageInfo = ContextHandler.getMessageInfo(ctx);
-        if (messageInfo == null) {
-            ctx.write(msg,promise);
-            return;
-        }
-
-        List<UrlClassTier.ClassInfo<AbstractHttpFilter>> filterInfo = ContextHandler.getMessageInfo(ctx).getFilterInfo();
-        for (UrlClassTier.ClassInfo<AbstractHttpFilter> info : filterInfo) {
-            AbstractHttpFilter filter = instanceFilter(info.getClz());
-            filter.handleOut((DefaultHttpResponse) msg);
-        }
-        ctx.write(msg,promise);
+        ctx.write(msg, promise);
     }
 
     private AbstractHttpFilter instanceFilter(Class<AbstractHttpFilter> clz) throws InstantiationException, IllegalAccessException {

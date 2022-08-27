@@ -3,11 +3,8 @@ package zstreamer.http;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.handler.codec.http.DefaultHttpObject;
-import io.netty.handler.codec.http.DefaultHttpRequest;
 import zstreamer.commons.util.InstanceTool;
-import zstreamer.http.entity.HttpEvent;
-import zstreamer.http.entity.MessageInfo;
+import zstreamer.http.entity.request.WrappedRequest;
 import zstreamer.http.service.AbstractHttpHandler;
 
 import java.util.concurrent.ConcurrentHashMap;
@@ -17,7 +14,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * 根据请求路径解析url，获取参数，分发消息给handler
  */
 @ChannelHandler.Sharable
-public class RequestDispatcher extends SimpleChannelInboundHandler<DefaultHttpObject> {
+public class RequestDispatcher extends SimpleChannelInboundHandler<WrappedRequest> {
     /**
      * 已经实例化过的单例Handler的缓存
      */
@@ -34,55 +31,14 @@ public class RequestDispatcher extends SimpleChannelInboundHandler<DefaultHttpOb
     }
 
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx, DefaultHttpObject msg) throws Exception {
-        AbstractHttpHandler handler = getServiceHandler(ctx);
-        if (msg instanceof DefaultHttpRequest) {
-            if (handler != null) {
-                ctx.fireUserEventTriggered(HttpEvent.DISPATCH_REQUEST);
-            } else {
-                ctx.fireUserEventTriggered(HttpEvent.NOT_FOUND);
-            }
-        }
-        if (handler == null) {
-            return;
-        }
+    protected void channelRead0(ChannelHandlerContext ctx, WrappedRequest msg) throws Exception {
+        AbstractHttpHandler handler = getServiceHandler(msg);
         handler.channelRead(ctx, msg);
     }
 
-    /**
-     * channel关闭后需要删除一些信息，防止内存泄漏
-     * 由于业务handler不会注入到pipeline中，所以需要手动触发事件
-     *
-     * @param ctx 上下文
-     */
-    @Override
-    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-        //触发当前业务handler的关闭事件
-        AbstractHttpHandler serviceHandler = getServiceHandler(ctx);
-        if (serviceHandler != null) {
-            serviceHandler.channelInactive(ctx);
-        }
-    }
-
-    /**
-     * 异常处理
-     */
-    @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-        //触发业务handler的异常处理流程
-        AbstractHttpHandler serviceHandler = getServiceHandler(ctx);
-        if (serviceHandler != null) {
-            serviceHandler.exceptionCaught(ctx, cause);
-        }
-    }
-
-    private AbstractHttpHandler getServiceHandler(ChannelHandlerContext ctx) throws Exception {
-        MessageInfo info = ContextHandler.getMessageInfo(ctx);
-        if (info == null){
-            return null;
-        }
+    private AbstractHttpHandler getServiceHandler(WrappedRequest request) throws Exception {
         //获取对应的class信息
-        Class<AbstractHttpHandler> clz = info.getClassInfo().getClz();
+        Class<AbstractHttpHandler> clz = request.getHandlerInfo().getClz();
         //获取url对应的handler
         return instanceHandler(clz);
     }

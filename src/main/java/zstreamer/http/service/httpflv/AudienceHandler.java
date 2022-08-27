@@ -1,16 +1,12 @@
 package zstreamer.http.service.httpflv;
 
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelId;
 import io.netty.handler.codec.http.*;
 import zstreamer.MediaMessagePool;
 import zstreamer.commons.annotation.RequestPath;
-import zstreamer.http.ContextHandler;
-import zstreamer.http.entity.MessageInfo;
+import zstreamer.commons.util.InstanceTool;
+import zstreamer.http.entity.request.WrappedRequest;
+import zstreamer.http.entity.response.AbstractWrappedResponse;
 import zstreamer.http.service.AbstractHttpHandler;
-import zstreamer.http.service.ChunkWriter;
-
-import java.util.concurrent.ConcurrentHashMap;
 
 
 /**
@@ -19,47 +15,16 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 @RequestPath("/live/audience/{roomName}")
 public class AudienceHandler extends AbstractHttpHandler {
-    private static final ConcurrentHashMap<ChannelId, Audience> AUDIENCE_MAP = new ConcurrentHashMap<>();
 
     @Override
-    protected boolean handleGet(ChannelHandlerContext ctx, DefaultHttpObject msg) throws Exception {
-        MessageInfo currentInfo = ContextHandler.getMessageInfo(ctx);
-        String roomName = currentInfo.getRestfulUrl().getParam("roomName");
-        Audience audience = new Audience(ctx.channel(), MediaMessagePool.getStreamer(roomName));
-        AUDIENCE_MAP.put(ctx.channel().id(), audience);
-
-        if (MediaMessagePool.registerAudience(roomName, audience)) {
-            HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
+    protected AbstractWrappedResponse handleGet(WrappedRequest msg) throws Exception {
+        String roomName = (String) msg.getParam("roomName");
+        if (MediaMessagePool.hasRoom(roomName)) {
+            DefaultHttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
             response.headers().set(HttpHeaderNames.CONTENT_TYPE, "video/x-flv");
-            response.headers().set(HttpHeaderNames.TRANSFER_ENCODING, HttpHeaderValues.CHUNKED);
-
-            ctx.writeAndFlush(response);
-            ctx.pipeline().remove(HttpServerCodec.class);
-            ctx.pipeline().addLast(ChunkWriter.getInstance());
-
-            audience.enterRoom(roomName, 0, ctx);
+            return new FlvChunkResponse(response, msg,roomName, 0);
         } else {
-            ctx.channel().close();
+            return InstanceTool.getNotFoundResponse(msg);
         }
-        return false;
-    }
-
-    @Override
-    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-        onClose(ctx);
-        ctx.fireChannelInactive();
-    }
-
-    @Override
-    protected void onException(ChannelHandlerContext ctx) throws Exception {
-        onClose(ctx);
-    }
-
-    private void onClose(ChannelHandlerContext ctx) {
-        Audience audience = AUDIENCE_MAP.get(ctx.channel().id());
-        if (audience != null) {
-            audience.onClose();
-        }
-        AUDIENCE_MAP.remove(ctx.channel().id());
     }
 }
