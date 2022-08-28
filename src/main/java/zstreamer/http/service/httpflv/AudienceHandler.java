@@ -11,7 +11,7 @@ import zstreamer.http.service.AbstractHttpHandler;
 
 /**
  * @author 张贝易
- * 观众登录处理器
+ * 观众拉流处理器
  */
 @RequestPath("/live/audience/{roomName}")
 public class AudienceHandler extends AbstractHttpHandler {

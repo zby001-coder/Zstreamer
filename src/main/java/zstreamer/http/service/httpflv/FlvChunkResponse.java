@@ -9,6 +9,10 @@ import zstreamer.http.service.httpflv.flv.FlvHeader;
 import zstreamer.http.service.httpflv.flv.FlvTag;
 import zstreamer.rtmp.message.messageType.media.MediaMessage;
 
+/**
+ * @author 张贝易
+ * 生产flv的chunk的响应
+ */
 public class FlvChunkResponse extends ChunkedResponse {
     private int basicTimeStamp = -1;
     /**
@@ -54,7 +58,7 @@ public class FlvChunkResponse extends ChunkedResponse {
     }
 
     /**
-     * 第一次拉流时会额外拉到一个FLVHeader和一个ScriptTag
+     * 第一次拉流时会额外拉到一个FLVHeader和一个ScriptTag和三个metadata
      *
      * @param node 媒体信息节点
      */

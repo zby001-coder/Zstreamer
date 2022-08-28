@@ -20,6 +20,7 @@ import java.nio.channels.FileChannel;
  */
 @RequestPath(value = "/file/{fileName}")
 public class FileHandler extends AbstractHttpHandler {
+    private static final String UPLOADER_NAME = "upLoader";
     private final FileDownLoader downLoader = new FileDownLoader();
 
     @Override
@@ -29,10 +30,10 @@ public class FileHandler extends AbstractHttpHandler {
 
     @Override
     protected AbstractWrappedResponse handlePost(WrappedRequest msg) throws Exception {
-        boolean finished = false;
-        Object param = msg.getParam("upLoader");
+        Object param = msg.getParam(UPLOADER_NAME);
         if (param == null) {
             param = new FileUploader();
+            msg.setParam(UPLOADER_NAME, param);
         }
         FileUploader uploader = (FileUploader) param;
 
@@ -46,6 +47,7 @@ public class FileHandler extends AbstractHttpHandler {
                 }
             } catch (Exception e) {
                 uploader.close();
+                return InstanceTool.getExceptionResponse(msg);
             }
         }
         return null;
@@ -79,7 +81,6 @@ public class FileHandler extends AbstractHttpHandler {
          */
         private FileResponse responseFile(File file, WrappedRequest request) throws IOException {
             DefaultHttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
-            response.headers().set(HttpHeaderNames.CONTENT_LENGTH, file.length());
             return new FileResponse(response, request, file, 0, file.length());
         }
 
@@ -96,8 +97,6 @@ public class FileHandler extends AbstractHttpHandler {
         private FileResponse responseRageFile(File file, WrappedRequest request, long start, long end) throws IOException {
             long contentSize = end - start + 1;
             DefaultHttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
-            response.headers().set(HttpHeaderNames.CONTENT_LENGTH, contentSize);
-            response.headers().set(HttpHeaderNames.CONTENT_RANGE, "bytes " + start + "-" + end + "/" + file.length());
             return new FileResponse(response, request, file, start, contentSize);
         }
 

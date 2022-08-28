@@ -10,12 +10,31 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+/**
+ * @author 张贝易
+ * 请求数据
+ */
 public class RequestInfo {
+    /**
+     * 请求中的参数
+     */
     private final HashMap<String, Object> params = new HashMap<>();
+    /**
+     * 请求头
+     */
     private final HttpHeaders headers;
+    /**
+     * 请求的url
+     */
     private final String url;
     private final HttpMethod method;
+    /**
+     * 处理该请求的handler信息
+     */
     private final UrlClassTier.ClassInfo<AbstractHttpHandler> handlerInfo;
+    /**
+     * 处理该请求的filter信息
+     */
     private final List<UrlClassTier.ClassInfo<AbstractHttpFilter>> filterInfo;
 
     public RequestInfo(HttpHeaders headers, String url, HttpMethod method,

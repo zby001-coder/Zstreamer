@@ -11,7 +11,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author 张贝易
- * 根据请求路径解析url，获取参数，分发消息给handler
+ * 分发消息给handler
  */
 @ChannelHandler.Sharable
 public class RequestDispatcher extends SimpleChannelInboundHandler<WrappedRequest> {

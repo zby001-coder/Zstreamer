@@ -11,9 +11,18 @@ import zstreamer.http.service.AbstractHttpHandler;
 import java.util.HashMap;
 import java.util.List;
 
+/**
+ * @author 张贝易
+ * 请求的包装类，可以是请求头，也可以是请求体
+ */
 public class WrappedRequest {
-    private static final String LENGTH_NAME = "length";
+    /**
+     * 保存请求信息的哈希表
+     */
     private static final FastThreadLocal<HashMap<ChannelId, RequestInfo>> REQUEST_INFO = new FastThreadLocal<>();
+    /**
+     * 一个channel对应一个请求
+     */
     private final ChannelId id;
     private final HttpObject delegate;
 
@@ -23,7 +32,7 @@ public class WrappedRequest {
     }
 
     /**
-     * 在异常情况下可以创建一个内容都为空的WrappedRequest
+     * 在异常情况下可以创建一个信息为空的WrappedRequest
      *
      * @param id       channel的id
      * @param delegate 请求头
@@ -102,6 +111,9 @@ public class WrappedRequest {
         return REQUEST_INFO.get().get(id);
     }
 
+    /**
+     * 在整个请求处理完后调用，清除该请求的信息
+     */
     public void finish() {
         REQUEST_INFO.get().remove(id);
     }

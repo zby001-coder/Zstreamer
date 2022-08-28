@@ -5,6 +5,10 @@ import io.netty.handler.codec.http.DefaultHttpResponse;
 import zstreamer.http.entity.request.RequestInfo;
 import zstreamer.http.entity.request.WrappedRequest;
 
+/**
+ * @author 张贝易
+ * 所有响应包装类的基类，响应应当使用它
+ */
 public abstract class AbstractWrappedResponse extends DefaultHttpObject {
     private final DefaultHttpResponse delegate;
     private final WrappedRequest request;

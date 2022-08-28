@@ -2,10 +2,8 @@ package zstreamer.http;
 
 import io.netty.channel.*;
 import io.netty.handler.codec.http.DefaultLastHttpContent;
-import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpServerCodec;
 import io.netty.handler.stream.ChunkedFile;
-import org.apache.tika.Tika;
 import zstreamer.commons.Config;
 import zstreamer.http.entity.response.AbstractWrappedResponse;
 import zstreamer.http.entity.response.chunk.ChunkedResponse;
@@ -19,12 +17,11 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * @author 张贝易
- * 放在链条头部，监听响应事件，防止多次响应
+ * 将包装的响应解析成可用的数据
  */
 @ChannelHandler.Sharable
 public class ResponseResolver extends ChannelOutboundHandlerAdapter {
     private static final ResponseResolver INSTANCE = new ResponseResolver();
-    private static final Tika TIKA = new Tika();
 
     public static ResponseResolver getInstance() {
         return INSTANCE;
@@ -47,6 +44,7 @@ public class ResponseResolver extends ChannelOutboundHandlerAdapter {
                 private int failTimes = 0;
 
                 {
+                    //先写一个响应头，然后去除HttpCodec
                     context.writeAndFlush(generator.getDelegate());
                     context.pipeline().remove(HttpServerCodec.class);
                 }
@@ -61,7 +59,7 @@ public class ResponseResolver extends ChannelOutboundHandlerAdapter {
                             context.writeAndFlush(successorChuck.getChunkContent());
                             context.channel().eventLoop().execute(this);
                         } else {
-                            //如果不为空，但没有内容，说明到了结尾了
+                            //如果不为空，但没有内容，说明到了结尾了，将promise放入，提示整个chunkedResponse响应完成
                             context.writeAndFlush(successorChuck.getChunkContent(),promise);
                             context.pipeline().addFirst(new HttpServerCodec());
                         }
@@ -81,9 +79,6 @@ public class ResponseResolver extends ChannelOutboundHandlerAdapter {
         } else if (msg instanceof FileResponse) {
             FileResponse response = (FileResponse) msg;
             File file = response.getFile();
-            //解析文件类型
-            String mimeType = TIKA.detect(file);
-            response.getDelegate().headers().set(HttpHeaderNames.CONTENT_TYPE, mimeType);
             //写响应头
             ctx.write(response.getDelegate());
             //写响应体

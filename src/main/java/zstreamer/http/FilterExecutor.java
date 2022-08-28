@@ -14,6 +14,10 @@ import zstreamer.http.filter.AbstractHttpFilter;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * @author 张贝易
+ * 过滤器执行工具
+ */
 @ChannelHandler.Sharable
 public class FilterExecutor extends ChannelDuplexHandler {
     private static final FilterExecutor INSTANCE = new FilterExecutor();
@@ -28,10 +32,12 @@ public class FilterExecutor extends ChannelDuplexHandler {
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+        //获取所有的filter并执行它们的handleIn
         List<UrlClassTier.ClassInfo<AbstractHttpFilter>> filterInfo = ((WrappedRequest) msg).getFilterInfo();
         for (UrlClassTier.ClassInfo<AbstractHttpFilter> info : filterInfo) {
             AbstractHttpFilter filter = instanceFilter(info.getClz());
             AbstractWrappedResponse response = filter.handleIn((WrappedRequest) msg);
+            //如果filter生成了response，那么可以直接响应了
             if (response != null) {
                 ReferenceCountUtil.release(msg);
                 ctx.channel().writeAndFlush(response);
@@ -43,6 +49,7 @@ public class FilterExecutor extends ChannelDuplexHandler {
 
     @Override
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
+        //获取所有的filter并执行它们的handleOut
         List<UrlClassTier.ClassInfo<AbstractHttpFilter>> filterInfo = ((AbstractWrappedResponse) msg).getRequestInfo().getFilterInfo();
         if (filterInfo != null) {
             for (UrlClassTier.ClassInfo<AbstractHttpFilter> info : filterInfo) {

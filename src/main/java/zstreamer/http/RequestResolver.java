@@ -57,6 +57,7 @@ public class RequestResolver extends SimpleChannelInboundHandler<HttpObject> {
             //传递消息
             ctx.fireChannelRead(new WrappedRequest(ctx.channel().id(), msg, restfulUrl, handlerInfo, filterInfo));
         } else {
+            //找不到，报404
             ctx.channel().writeAndFlush(InstanceTool.getNotFoundResponse(new WrappedRequest(ctx.channel().id(), msg)));
         }
     }
@@ -69,6 +70,7 @@ public class RequestResolver extends SimpleChannelInboundHandler<HttpObject> {
      */
     private void handleContent(ChannelHandlerContext ctx, HttpContent msg) throws Exception {
         if (StateHandler.ifHandleRequest(ctx)) {
+            //一个请求结尾，暂停读取，防止两个响应混合起来
             if (msg instanceof LastHttpContent) {
                 ctx.channel().config().setAutoRead(false);
             }

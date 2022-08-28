@@ -4,6 +4,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http.DefaultHttpObject;
 import io.netty.handler.codec.http.HttpMethod;
+import io.netty.handler.codec.http.LastHttpContent;
 import zstreamer.commons.util.InstanceTool;
 import zstreamer.http.entity.request.WrappedRequest;
 import zstreamer.http.entity.response.AbstractWrappedResponse;
@@ -18,6 +19,7 @@ public abstract class AbstractHttpHandler extends SimpleChannelInboundHandler<Wr
         try {
             dispatchHttpObject(ctx, msg);
         } catch (Exception e) {
+            //如果下层没有处理相应的异常，就在此处生产一个响应
             ctx.channel().writeAndFlush(InstanceTool.getExceptionResponse(msg));
         }
     }
@@ -42,9 +44,19 @@ public abstract class AbstractHttpHandler extends SimpleChannelInboundHandler<Wr
         } else {
             result = InstanceTool.getNotFoundResponse(msg);
         }
+        //如果请求最后一个部分都处理完了，下层还不返回响应，直接返回一个OK
+        if (msg.getDelegate() instanceof LastHttpContent && result == null) {
+            result = InstanceTool.getEmptyOkResponse(msg);
+        }
         handleResult(ctx, result);
     }
 
+    /**
+     * 处理下层返回的响应
+     *
+     * @param ctx    上下文
+     * @param result 响应，如果为空就说明下层没有处理完
+     */
     private void handleResult(ChannelHandlerContext ctx, DefaultHttpObject result) {
         if (result == null) {
             return;

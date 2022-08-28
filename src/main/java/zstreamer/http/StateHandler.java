@@ -8,7 +8,7 @@ import java.util.HashMap;
 
 /**
  * @author 张贝易
- * 上下文信息，放在链条最后，使上下文信息最后被删除
+ * 控制请求是否需要继续读取，启动下一个请求处理流程的handler
  */
 @ChannelHandler.Sharable
 public class StateHandler extends ChannelDuplexHandler {
@@ -44,17 +44,26 @@ public class StateHandler extends ChannelDuplexHandler {
         ctx.fireChannelActive();
     }
 
+    /**
+     * 当一个响应发出时，这个请求的接下来的数据可用忽略
+     * @param ctx 上下文
+     * @param msg 响应
+     */
     @Override
-    public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise){
+    public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) {
+        //停止处理该请求
         HANDLE_REQUEST.get().put(ctx.channel().id(), false);
         ctx.write(msg, promise).addListener((future -> {
+            //在这个响应写完之后，设置请求为可处理，启动自动读取
             HANDLE_REQUEST.get().put(ctx.channel().id(), true);
+            ctx.channel().config().setAutoRead(true);
             ((AbstractWrappedResponse) msg).finish();
         }));
     }
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+        //如果异常没有被下层处理，直接关闭整个通道
         ctx.channel().close();
         super.exceptionCaught(ctx, cause);
     }

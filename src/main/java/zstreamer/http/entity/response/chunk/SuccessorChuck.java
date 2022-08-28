@@ -5,6 +5,10 @@ import io.netty.buffer.PooledByteBufAllocator;
 
 import java.nio.charset.StandardCharsets;
 
+/**
+ * @author 张贝易
+ * chunk信息的包装类
+ */
 public class SuccessorChuck {
     private static final String SPLITTER = "\r\n";
     private final byte[] content;
