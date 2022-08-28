@@ -42,13 +42,13 @@ public class InstanceTool {
 
     public static AbstractWrappedResponse getWrongMethodResponse(WrappedRequest request) {
         DefaultFullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.METHOD_NOT_ALLOWED);
-        response.headers().set("content-length", 0);
+        response.headers().set(HttpHeaderNames.CONTENT_LENGTH, 0);
         return new SimpleResponse(response,request);
     }
 
     public static AbstractWrappedResponse getExceptionResponse(WrappedRequest request) {
         DefaultFullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.INTERNAL_SERVER_ERROR);
-        response.headers().set("content-length", "0");
+        response.headers().set(HttpHeaderNames.CONTENT_LENGTH, "0");
         return new SimpleResponse(response,request);
     }
 
