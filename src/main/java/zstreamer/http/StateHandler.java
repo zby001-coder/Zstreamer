@@ -1,6 +1,7 @@
 package zstreamer.http;
 
 import io.netty.channel.*;
+import io.netty.handler.codec.http.HttpRequest;
 import io.netty.util.concurrent.FastThreadLocal;
 import zstreamer.http.entity.response.AbstractWrappedResponse;
 
@@ -46,6 +47,7 @@ public class StateHandler extends ChannelDuplexHandler {
 
     /**
      * 当一个响应发出时，这个请求的接下来的数据可用忽略
+     *
      * @param ctx 上下文
      * @param msg 响应
      */
@@ -54,18 +56,24 @@ public class StateHandler extends ChannelDuplexHandler {
         //停止处理该请求
         HANDLE_REQUEST.get().put(ctx.channel().id(), false);
         ctx.write(msg, promise).addListener((future -> {
-            //在这个响应写完之后，设置请求为可处理，启动自动读取
-            HANDLE_REQUEST.get().put(ctx.channel().id(), true);
+            //在这个响应写完之后，启动自动读取，因为不会混合响应了
             ctx.channel().config().setAutoRead(true);
             ((AbstractWrappedResponse) msg).finish();
         }));
     }
 
     @Override
+    public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
+        //新请求到了，开启处理
+        if (evt instanceof HttpRequest) {
+            HANDLE_REQUEST.get().put(ctx.channel().id(), true);
+        }
+    }
+
+    @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
         //如果异常没有被下层处理，直接关闭整个通道
         ctx.channel().close();
-        super.exceptionCaught(ctx, cause);
     }
 
     @Override

@@ -34,6 +34,7 @@ public class RequestResolver extends SimpleChannelInboundHandler<HttpObject> {
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, HttpObject msg) throws Exception {
         if (msg instanceof HttpRequest) {
+            ctx.fireUserEventTriggered(msg);
             handleHeader(ctx, (HttpRequest) msg);
         } else {
             handleContent(ctx, (HttpContent) msg);
