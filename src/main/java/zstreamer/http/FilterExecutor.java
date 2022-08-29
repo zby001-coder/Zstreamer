@@ -7,8 +7,8 @@ import io.netty.channel.ChannelPromise;
 import io.netty.util.ReferenceCountUtil;
 import zstreamer.commons.loader.UrlClassTier;
 import zstreamer.commons.util.InstanceTool;
-import zstreamer.http.entity.request.WrappedRequest;
-import zstreamer.http.entity.response.AbstractWrappedResponse;
+import zstreamer.http.entity.request.WrappedHead;
+import zstreamer.http.entity.response.WrappedResponse;
 import zstreamer.http.filter.AbstractHttpFilter;
 
 import java.util.List;
@@ -33,10 +33,10 @@ public class FilterExecutor extends ChannelDuplexHandler {
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         //获取所有的filter并执行它们的handleIn
-        List<UrlClassTier.ClassInfo<AbstractHttpFilter>> filterInfo = ((WrappedRequest) msg).getFilterInfo();
+        List<UrlClassTier.ClassInfo<AbstractHttpFilter>> filterInfo = ((WrappedHead) msg).getFilterInfo();
         for (UrlClassTier.ClassInfo<AbstractHttpFilter> info : filterInfo) {
             AbstractHttpFilter filter = instanceFilter(info.getClz());
-            AbstractWrappedResponse response = filter.handleIn((WrappedRequest) msg);
+            WrappedResponse response = filter.handleIn((WrappedHead) msg);
             //如果filter生成了response，那么可以直接响应了
             if (response != null) {
                 ReferenceCountUtil.release(msg);
@@ -50,11 +50,11 @@ public class FilterExecutor extends ChannelDuplexHandler {
     @Override
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
         //获取所有的filter并执行它们的handleOut
-        List<UrlClassTier.ClassInfo<AbstractHttpFilter>> filterInfo = ((AbstractWrappedResponse) msg).getRequestInfo().getFilterInfo();
+        List<UrlClassTier.ClassInfo<AbstractHttpFilter>> filterInfo = ((WrappedResponse) msg).getRequestInfo().getFilterInfo();
         if (filterInfo != null) {
             for (UrlClassTier.ClassInfo<AbstractHttpFilter> info : filterInfo) {
                 AbstractHttpFilter filter = instanceFilter(info.getClz());
-                filter.handleOut((AbstractWrappedResponse) msg);
+                filter.handleOut((WrappedResponse) msg);
             }
         }
         ctx.write(msg, promise);

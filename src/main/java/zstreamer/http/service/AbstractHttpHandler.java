@@ -4,10 +4,9 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http.DefaultHttpObject;
 import io.netty.handler.codec.http.HttpMethod;
-import io.netty.handler.codec.http.LastHttpContent;
 import zstreamer.commons.util.InstanceTool;
 import zstreamer.http.entity.request.WrappedRequest;
-import zstreamer.http.entity.response.AbstractWrappedResponse;
+import zstreamer.http.entity.response.WrappedResponse;
 
 /**
  * @author 张贝易
@@ -32,7 +31,7 @@ public abstract class AbstractHttpHandler extends SimpleChannelInboundHandler<Wr
      */
     private void dispatchHttpObject(ChannelHandlerContext ctx, WrappedRequest msg) throws Exception {
         HttpMethod currentMethod = msg.method();
-        AbstractWrappedResponse result = null;
+        WrappedResponse result = null;
         if (currentMethod.equals(HttpMethod.GET)) {
             result = handleGet(msg);
         } else if (currentMethod.equals(HttpMethod.POST)) {
@@ -45,7 +44,7 @@ public abstract class AbstractHttpHandler extends SimpleChannelInboundHandler<Wr
             result = InstanceTool.getNotFoundResponse(msg);
         }
         //如果请求最后一个部分都处理完了，下层还不返回响应，直接返回一个OK
-        if (msg.getDelegate() instanceof LastHttpContent && result == null) {
+        if (msg.isEnd() && result == null) {
             result = InstanceTool.getEmptyOkResponse(msg);
         }
         handleResult(ctx, result);
@@ -69,19 +68,19 @@ public abstract class AbstractHttpHandler extends SimpleChannelInboundHandler<Wr
      *
      * @return 返回true表明这个请求已经处理完了，可以进行endResponse操作了
      */
-    protected AbstractWrappedResponse handleGet(WrappedRequest msg) throws Exception {
+    protected WrappedResponse handleGet(WrappedRequest msg) throws Exception {
         return InstanceTool.getWrongMethodResponse(msg);
     }
 
-    protected AbstractWrappedResponse handlePost(WrappedRequest msg) throws Exception {
+    protected WrappedResponse handlePost(WrappedRequest msg) throws Exception {
         return InstanceTool.getWrongMethodResponse(msg);
     }
 
-    protected AbstractWrappedResponse handlePut(WrappedRequest msg) throws Exception {
+    protected WrappedResponse handlePut(WrappedRequest msg) throws Exception {
         return InstanceTool.getWrongMethodResponse(msg);
     }
 
-    protected AbstractWrappedResponse handleDelete(WrappedRequest msg) throws Exception {
+    protected WrappedResponse handleDelete(WrappedRequest msg) throws Exception {
         return InstanceTool.getWrongMethodResponse(msg);
     }
 }

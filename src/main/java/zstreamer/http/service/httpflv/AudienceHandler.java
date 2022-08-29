@@ -5,7 +5,7 @@ import zstreamer.MediaMessagePool;
 import zstreamer.commons.annotation.RequestPath;
 import zstreamer.commons.util.InstanceTool;
 import zstreamer.http.entity.request.WrappedRequest;
-import zstreamer.http.entity.response.AbstractWrappedResponse;
+import zstreamer.http.entity.response.WrappedResponse;
 import zstreamer.http.service.AbstractHttpHandler;
 
 
@@ -17,7 +17,7 @@ import zstreamer.http.service.AbstractHttpHandler;
 public class AudienceHandler extends AbstractHttpHandler {
 
     @Override
-    protected AbstractWrappedResponse handleGet(WrappedRequest msg) throws Exception {
+    protected WrappedResponse handleGet(WrappedRequest msg) throws Exception {
         String roomName = (String) msg.getParam("roomName");
         if (MediaMessagePool.hasRoom(roomName)) {
             DefaultHttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);

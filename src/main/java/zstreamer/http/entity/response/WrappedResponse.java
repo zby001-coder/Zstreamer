@@ -9,11 +9,11 @@ import zstreamer.http.entity.request.WrappedRequest;
  * @author 张贝易
  * 所有响应包装类的基类，响应应当使用它
  */
-public abstract class AbstractWrappedResponse extends DefaultHttpObject {
+public abstract class WrappedResponse extends DefaultHttpObject {
     private final DefaultHttpResponse delegate;
     private final WrappedRequest request;
 
-    public AbstractWrappedResponse(DefaultHttpResponse delegate, WrappedRequest request) {
+    public WrappedResponse(DefaultHttpResponse delegate, WrappedRequest request) {
         this.delegate = delegate;
         this.request = request;
     }

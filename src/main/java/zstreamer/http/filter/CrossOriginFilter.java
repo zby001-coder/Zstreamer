@@ -3,8 +3,8 @@ package zstreamer.http.filter;
 import io.netty.handler.codec.http.*;
 import zstreamer.commons.annotation.FilterPath;
 import zstreamer.commons.util.InstanceTool;
-import zstreamer.http.entity.request.WrappedRequest;
-import zstreamer.http.entity.response.AbstractWrappedResponse;
+import zstreamer.http.entity.request.WrappedHead;
+import zstreamer.http.entity.response.WrappedResponse;
 
 /**
  * @author 张贝易
@@ -14,7 +14,7 @@ import zstreamer.http.entity.response.AbstractWrappedResponse;
 public class CrossOriginFilter extends AbstractHttpFilter {
 
     @Override
-    public AbstractWrappedResponse handleIn(WrappedRequest request) {
+    public WrappedResponse handleIn(WrappedHead request) {
         if (request.method().equals(HttpMethod.OPTIONS)) {
             return InstanceTool.getEmptyOkResponse(request);
         }
@@ -22,7 +22,7 @@ public class CrossOriginFilter extends AbstractHttpFilter {
     }
 
     @Override
-    public void handleOut(AbstractWrappedResponse response) {
+    public void handleOut(WrappedResponse response) {
         response.getDelegate().headers()
                 .set(HttpHeaderNames.ACCESS_CONTROL_ALLOW_ORIGIN, "*")
                 .set(HttpHeaderNames.ACCESS_CONTROL_ALLOW_METHODS, "*")

@@ -1,11 +1,14 @@
 package zstreamer.http.service.file;
 
+import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.http.*;
 import zstreamer.commons.Config;
 import zstreamer.commons.annotation.RequestPath;
 import zstreamer.commons.util.InstanceTool;
+import zstreamer.http.entity.request.WrappedContent;
+import zstreamer.http.entity.request.WrappedHead;
 import zstreamer.http.entity.request.WrappedRequest;
-import zstreamer.http.entity.response.AbstractWrappedResponse;
+import zstreamer.http.entity.response.WrappedResponse;
 import zstreamer.http.entity.response.file.FileResponse;
 import zstreamer.http.service.AbstractHttpHandler;
 
@@ -24,12 +27,12 @@ public class FileHandler extends AbstractHttpHandler {
     private final FileDownLoader downLoader = new FileDownLoader();
 
     @Override
-    protected AbstractWrappedResponse handleGet(WrappedRequest msg) throws Exception {
-        return downLoader.handleHeader(msg);
+    protected WrappedResponse handleGet(WrappedRequest msg) throws Exception {
+        return downLoader.handleHeader((WrappedHead) msg);
     }
 
     @Override
-    protected AbstractWrappedResponse handlePost(WrappedRequest msg) throws Exception {
+    protected WrappedResponse handlePost(WrappedRequest msg) throws Exception {
         Object param = msg.getParam(UPLOADER_NAME);
         if (param == null) {
             param = new FileUploader();
@@ -37,11 +40,11 @@ public class FileHandler extends AbstractHttpHandler {
         }
         FileUploader uploader = (FileUploader) param;
 
-        if (msg.getDelegate() instanceof DefaultHttpRequest) {
-            uploader.handleHeader(msg);
+        if (msg instanceof WrappedHead) {
+            uploader.handleHeader((WrappedHead) msg);
         } else {
             try {
-                if (uploader.handleContent(msg)) {
+                if (uploader.handleContent((WrappedContent) msg)) {
                     uploader.close();
                     return InstanceTool.getEmptyOkResponse(msg);
                 }
@@ -57,7 +60,7 @@ public class FileHandler extends AbstractHttpHandler {
      * 文件下载工具
      */
     private static class FileDownLoader {
-        protected FileResponse handleHeader(WrappedRequest request) throws IOException {
+        protected FileResponse handleHeader(WrappedHead request) throws IOException {
             String fileName = (String) request.getParam("fileName");
             String range = request.headers().get(HttpHeaderNames.RANGE);
             if (fileName == null) {
@@ -118,7 +121,7 @@ public class FileHandler extends AbstractHttpHandler {
         private long fileSize = 0;
         private long writtenSize = 0;
 
-        protected void handleHeader(WrappedRequest request) throws Exception {
+        protected void handleHeader(WrappedHead request) throws Exception {
             fileSize = Long.parseLong(request.headers().get(HttpHeaderNames.CONTENT_LENGTH));
             String fileName = (String) request.getParam("fileName");
             String contentType = request.headers().get(HttpHeaderNames.CONTENT_TYPE);
@@ -130,10 +133,10 @@ public class FileHandler extends AbstractHttpHandler {
             fileChannel = new FileOutputStream(filePath).getChannel();
         }
 
-        protected boolean handleContent(WrappedRequest request) throws Exception {
-            DefaultHttpContent content = (DefaultHttpContent) request.getDelegate();
-            writtenSize += content.content().readableBytes();
-            fileChannel.write(content.content().nioBuffer());
+        protected boolean handleContent(WrappedContent request) throws Exception {
+            ByteBuf content = request.getContent();
+            writtenSize += content.readableBytes();
+            fileChannel.write(content.nioBuffer());
             return writtenSize == fileSize;
         }
 

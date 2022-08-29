@@ -4,13 +4,13 @@ import io.netty.handler.codec.http.DefaultHttpResponse;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpHeaderValues;
 import zstreamer.http.entity.request.WrappedRequest;
-import zstreamer.http.entity.response.AbstractWrappedResponse;
+import zstreamer.http.entity.response.WrappedResponse;
 
 /**
  * @author 张贝易
  * 为chunked类型的响应设计
  */
-public abstract class ChunkedResponse extends AbstractWrappedResponse {
+public abstract class ChunkedResponse extends WrappedResponse {
 
     public ChunkedResponse(DefaultHttpResponse header, WrappedRequest request) {
         super(header,request);

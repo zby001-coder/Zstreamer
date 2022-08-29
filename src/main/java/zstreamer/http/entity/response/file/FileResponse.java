@@ -4,7 +4,7 @@ import io.netty.handler.codec.http.DefaultHttpResponse;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import org.apache.tika.Tika;
 import zstreamer.http.entity.request.WrappedRequest;
-import zstreamer.http.entity.response.AbstractWrappedResponse;
+import zstreamer.http.entity.response.WrappedResponse;
 
 import java.io.File;
 import java.io.IOException;
@@ -13,7 +13,7 @@ import java.io.IOException;
  * @author 张贝易
  * 为传输文件类型的响应设计
  */
-public class FileResponse extends AbstractWrappedResponse {
+public class FileResponse extends WrappedResponse {
     private static final Tika TIKA = new Tika();
     private final File file;
     private final long offSet;

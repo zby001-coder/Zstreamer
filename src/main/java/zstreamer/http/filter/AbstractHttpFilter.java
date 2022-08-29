@@ -2,8 +2,8 @@ package zstreamer.http.filter;
 
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandler;
-import zstreamer.http.entity.request.WrappedRequest;
-import zstreamer.http.entity.response.AbstractWrappedResponse;
+import zstreamer.http.entity.request.WrappedHead;
+import zstreamer.http.entity.response.WrappedResponse;
 
 /**
  * @author 张贝易
@@ -17,11 +17,11 @@ public abstract class AbstractHttpFilter extends ChannelDuplexHandler {
      * @param request 请求数据
      * @return 过滤失败时返回一个响应
      */
-    public AbstractWrappedResponse handleIn(WrappedRequest request) {
+    public WrappedResponse handleIn(WrappedHead request) {
         return null;
     }
 
-    public void handleOut(AbstractWrappedResponse response) {
+    public void handleOut(WrappedResponse response) {
 
     }
 }

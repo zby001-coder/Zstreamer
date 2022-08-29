@@ -5,7 +5,7 @@ import io.netty.handler.codec.http.DefaultLastHttpContent;
 import io.netty.handler.codec.http.HttpServerCodec;
 import io.netty.handler.stream.ChunkedFile;
 import zstreamer.commons.Config;
-import zstreamer.http.entity.response.AbstractWrappedResponse;
+import zstreamer.http.entity.response.WrappedResponse;
 import zstreamer.http.entity.response.chunk.ChunkedResponse;
 import zstreamer.http.entity.response.chunk.SuccessorChuck;
 import zstreamer.http.entity.response.file.FileResponse;
@@ -32,7 +32,7 @@ public class ResponseResolver extends ChannelOutboundHandlerAdapter {
 
     @Override
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
-        if (!(msg instanceof AbstractWrappedResponse)) {
+        if (!(msg instanceof WrappedResponse)) {
             return;
         }
         if (msg instanceof ChunkedResponse) {

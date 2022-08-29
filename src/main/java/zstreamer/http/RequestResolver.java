@@ -3,13 +3,17 @@ package zstreamer.http;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.handler.codec.http.*;
+import io.netty.handler.codec.http.HttpContent;
+import io.netty.handler.codec.http.HttpObject;
+import io.netty.handler.codec.http.HttpRequest;
+import io.netty.handler.codec.http.LastHttpContent;
 import zstreamer.commons.loader.FilterClassResolver;
 import zstreamer.commons.loader.HandlerClassResolver;
 import zstreamer.commons.loader.UrlClassTier;
 import zstreamer.commons.loader.UrlResolver;
 import zstreamer.commons.util.InstanceTool;
-import zstreamer.http.entity.request.WrappedRequest;
+import zstreamer.http.entity.request.WrappedContent;
+import zstreamer.http.entity.request.WrappedHead;
 import zstreamer.http.filter.AbstractHttpFilter;
 import zstreamer.http.service.AbstractHttpHandler;
 
@@ -56,10 +60,10 @@ public class RequestResolver extends SimpleChannelInboundHandler<HttpObject> {
             //将url中的参数解析出来，包装后传递下去
             UrlResolver.RestfulUrl restfulUrl = UrlResolver.getInstance().resolveUrl(url, handlerInfo.getUrlPattern());
             //传递消息
-            ctx.fireChannelRead(new WrappedRequest(ctx.channel().id(), msg, restfulUrl, handlerInfo, filterInfo));
+            ctx.fireChannelRead(new WrappedHead(ctx.channel().id(), msg, restfulUrl, handlerInfo, filterInfo));
         } else {
             //找不到，报404
-            ctx.channel().writeAndFlush(InstanceTool.getNotFoundResponse(new WrappedRequest(ctx.channel().id(), msg)));
+            ctx.channel().writeAndFlush(InstanceTool.getNotFoundResponse(new WrappedHead(ctx.channel().id(), msg)));
         }
     }
 
@@ -75,7 +79,8 @@ public class RequestResolver extends SimpleChannelInboundHandler<HttpObject> {
             if (msg instanceof LastHttpContent) {
                 ctx.channel().config().setAutoRead(false);
             }
-            ctx.fireChannelRead(new WrappedRequest(ctx.channel().id(), msg));
+            msg.retain();
+            ctx.fireChannelRead(new WrappedContent(ctx.channel().id(), msg));
         }
         //如果当前请求的state被置为disabled，就不处理下面的数据了
     }

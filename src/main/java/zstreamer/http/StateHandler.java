@@ -3,7 +3,7 @@ package zstreamer.http;
 import io.netty.channel.*;
 import io.netty.handler.codec.http.HttpRequest;
 import io.netty.util.concurrent.FastThreadLocal;
-import zstreamer.http.entity.response.AbstractWrappedResponse;
+import zstreamer.http.entity.response.WrappedResponse;
 
 import java.util.HashMap;
 
@@ -58,7 +58,7 @@ public class StateHandler extends ChannelDuplexHandler {
         ctx.write(msg, promise).addListener((future -> {
             //在这个响应写完之后，启动自动读取，因为不会混合响应了
             ctx.channel().config().setAutoRead(true);
-            ((AbstractWrappedResponse) msg).finish();
+            ((WrappedResponse) msg).finish();
         }));
     }
 
