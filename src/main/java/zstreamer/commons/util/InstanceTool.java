@@ -4,7 +4,7 @@ import io.netty.handler.codec.http.DefaultFullHttpResponse;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpVersion;
-import zstreamer.http.StateHandler;
+import zstreamer.http.ContextHandler;
 import zstreamer.http.entity.request.WrappedRequest;
 import zstreamer.http.entity.response.WrappedResponse;
 import zstreamer.http.entity.response.simple.SimpleResponse;
@@ -19,7 +19,7 @@ public class InstanceTool {
         T singleton = null;
         if (!map.containsKey(clz)) {
             //没有实例化过，进行实例化
-            synchronized (StateHandler.class) {
+            synchronized (ContextHandler.class) {
                 if (!map.containsKey(clz)) {
                     singleton = clz.newInstance();
                     map.put(clz, singleton);

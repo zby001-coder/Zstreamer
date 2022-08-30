@@ -11,6 +11,7 @@ import java.lang.annotation.RetentionPolicy;
 public @interface RequestPath {
     /**
      * 请求的路径的值
+     *
      * @return 请求路径
      */
     String value();

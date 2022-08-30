@@ -1,10 +1,8 @@
 package zstreamer.http.entity.request;
 
-import io.netty.channel.ChannelId;
 import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpObject;
-import io.netty.util.concurrent.FastThreadLocal;
 import zstreamer.commons.loader.UrlClassTier;
 import zstreamer.http.filter.AbstractHttpFilter;
 import zstreamer.http.service.AbstractHttpHandler;
@@ -18,58 +16,50 @@ import java.util.List;
  */
 public abstract class WrappedRequest {
     /**
-     * 保存请求信息的哈希表
+     * 保存请求信息
      */
-    protected static final FastThreadLocal<HashMap<ChannelId, RequestInfo>> REQUEST_INFO = new FastThreadLocal<>();
-    /**
-     * 一个channel对应一个请求
-     */
-    protected final ChannelId id;
+    protected final RequestInfo requestInfo;
     protected final HttpObject delegate;
 
-    public WrappedRequest(ChannelId id, HttpObject delegate) {
-        this.id = id;
+    public WrappedRequest(HttpObject delegate,RequestInfo requestInfo) {
+        this.requestInfo = requestInfo;
         this.delegate = delegate;
     }
 
-    public ChannelId getId() {
-        return id;
-    }
-
     public Object getParam(String key) {
-        return REQUEST_INFO.get().get(id).getParam(key);
+        return requestInfo.getParam(key);
     }
 
     public void setParam(String key, Object value) {
-        REQUEST_INFO.get().get(id).setParam(key, value);
+        requestInfo.setParam(key, value);
     }
 
     public String url() {
-        return REQUEST_INFO.get().get(id).getUrl();
+        return requestInfo.getUrl();
     }
 
     public HashMap<String, Object> getParams() {
-        return REQUEST_INFO.get().get(id).getParams();
+        return requestInfo.getParams();
     }
 
     public HttpHeaders headers() {
-        return REQUEST_INFO.get().get(id).headers();
+        return requestInfo.headers();
     }
 
     public HttpMethod method() {
-        return REQUEST_INFO.get().get(id).getMethod();
+        return requestInfo.getMethod();
     }
 
     public UrlClassTier.ClassInfo<AbstractHttpHandler> getHandlerInfo() {
-        return REQUEST_INFO.get().get(id).getHandlerInfo();
+        return requestInfo.getHandlerInfo();
     }
 
     public List<UrlClassTier.ClassInfo<AbstractHttpFilter>> getFilterInfo() {
-        return REQUEST_INFO.get().get(id).getFilterInfo();
+        return requestInfo.getFilterInfo();
     }
 
     public RequestInfo getRequestInfo() {
-        return REQUEST_INFO.get().get(id);
+        return requestInfo;
     }
 
     /**
@@ -78,11 +68,4 @@ public abstract class WrappedRequest {
      * @return 是否为最后一个分段
      */
     public abstract boolean isEnd();
-
-    /**
-     * 在整个请求处理完后调用，清除该请求的信息
-     */
-    public void finish() {
-        REQUEST_INFO.get().remove(id);
-    }
 }

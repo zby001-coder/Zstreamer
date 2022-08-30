@@ -13,7 +13,7 @@ import zstreamer.commons.Config;
  * @author 张贝易
  */
 public class Server {
-    public static void main(String[] args) throws InterruptedException {
+    public static void main(String[] args) throws Exception {
         NioEventLoopGroup boss = new NioEventLoopGroup(1);
         NioEventLoopGroup worker = new NioEventLoopGroup();
         ServerBootstrap server = new ServerBootstrap();

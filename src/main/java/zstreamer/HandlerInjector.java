@@ -60,7 +60,7 @@ public class HandlerInjector extends ChannelInitializer<SocketChannel> {
                 .addLast(RequestResolver.getInstance())
                 .addLast(FilterExecutor.getInstance())
                 .addLast(RequestDispatcher.getInstance())
-                .addLast(StateHandler.getInstance());
+                .addLast(new ContextHandler());
     }
 
     private void initRtmp(ChannelPipeline pipeline) {

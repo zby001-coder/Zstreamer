@@ -9,6 +9,7 @@ import zstreamer.http.service.AbstractHttpHandler;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author 张贝易
@@ -39,12 +40,22 @@ public class RequestInfo {
 
     public RequestInfo(HttpHeaders headers, String url, HttpMethod method,
                        UrlClassTier.ClassInfo<AbstractHttpHandler> handlerInfo,
-                       List<UrlClassTier.ClassInfo<AbstractHttpFilter>> filterInfo) {
+                       List<UrlClassTier.ClassInfo<AbstractHttpFilter>> filterInfo,
+                       Map<String, ?> params) {
         this.headers = headers;
         this.url = url;
         this.method = method;
         this.handlerInfo = handlerInfo;
         this.filterInfo = filterInfo;
+        if (params != null) {
+            this.params.putAll(params);
+        }
+    }
+
+    public RequestInfo(HttpHeaders headers, String url, HttpMethod method,
+                       UrlClassTier.ClassInfo<AbstractHttpHandler> handlerInfo,
+                       List<UrlClassTier.ClassInfo<AbstractHttpFilter>> filterInfo) {
+        this(headers, url, method, handlerInfo, filterInfo, null);
     }
 
     public HashMap<String, Object> getParams() {
@@ -80,7 +91,7 @@ public class RequestInfo {
     }
 
     public List<UrlClassTier.ClassInfo<AbstractHttpFilter>> getFilterInfo() {
-        if (filterInfo!=null){
+        if (filterInfo != null) {
             return new ArrayList<>(filterInfo);
         }
         return new ArrayList<>();

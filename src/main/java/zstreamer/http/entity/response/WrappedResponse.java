@@ -25,8 +25,4 @@ public abstract class WrappedResponse extends DefaultHttpObject {
     public DefaultHttpResponse getDelegate() {
         return delegate;
     }
-
-    public void finish() {
-        request.finish();
-    }
 }

@@ -34,4 +34,9 @@ public class Config {
     public static final int FILE_CHUNK_SIZE = 8192;
     public static final int CHUNK_RESPONSE_FAIL_MAX_TIME = 10;
     public static final int CHUNK_RESPONSE_RETRY_INTERVAL = 10;
+
+    /**
+     * http连接最大空闲时间，毫秒
+     */
+    public static final long CONNECTION_MAX_IDLE_TIME = 30000;
 }

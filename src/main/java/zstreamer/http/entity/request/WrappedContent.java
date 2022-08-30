@@ -1,7 +1,6 @@
 package zstreamer.http.entity.request;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.channel.ChannelId;
 import io.netty.handler.codec.http.HttpContent;
 import io.netty.handler.codec.http.LastHttpContent;
 import io.netty.util.ReferenceCounted;
@@ -9,8 +8,8 @@ import io.netty.util.ReferenceCounted;
 public class WrappedContent extends WrappedRequest implements ReferenceCounted {
     private final HttpContent convenientDelegate;
 
-    public WrappedContent(ChannelId id, HttpContent delegate) {
-        super(id, delegate);
+    public WrappedContent(HttpContent delegate,RequestInfo requestInfo) {
+        super(delegate,requestInfo);
         this.convenientDelegate = delegate;
     }
 
