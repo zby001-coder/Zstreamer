@@ -37,6 +37,7 @@ public class ContextHandler extends ChannelDuplexHandler {
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) {
         //停止处理该请求
         handleRequest = false;
+        requestInfo = null;
         ctx.write(msg, promise).addListener((future -> {
             //在这个响应写完之后，启动自动读取，因为不会混合响应了
             ctx.channel().config().setAutoRead(true);
