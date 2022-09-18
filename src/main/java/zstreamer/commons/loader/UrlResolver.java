@@ -16,6 +16,8 @@ public class UrlResolver {
     }
 
     public RestfulUrl resolveUrl(String url, String urlPattern) {
+        url = UrlTool.formatSplitter(url);
+        urlPattern = UrlTool.formatSplitter(urlPattern);
         RestfulUrl result = resolveTailParams(url);
         String[] rawPrefixes = result.url.split("/");
         String[] patternPrefixes = urlPattern.split("/");

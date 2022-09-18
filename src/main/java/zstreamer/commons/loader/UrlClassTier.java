@@ -53,7 +53,7 @@ public class UrlClassTier<T> {
         if (!children.containsKey(splitPrefix[0])) {
             children.put(splitPrefix[0], new UrlClassTier<T>(splitPrefix, 0, handlerClz, origin));
         } else if (splitPrefix.length > 1) {
-            children.get(splitPrefix[0]).addPrefix(splitPrefix, 1, handlerClz, url);
+            children.get(splitPrefix[0]).addPrefix(splitPrefix, 1, handlerClz, origin);
         } else {
             children.get(splitPrefix[0]).handlerClz.add(handlerClz);
             children.get(splitPrefix[0]).url = url;
