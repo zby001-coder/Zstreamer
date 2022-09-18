@@ -99,7 +99,7 @@ public class FileHandler extends AbstractHttpHandler {
          */
         private FileResponse responseRageFile(File file, WrappedRequest request, long start, long end) throws IOException {
             long contentSize = end - start + 1;
-            DefaultHttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
+            DefaultHttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.PARTIAL_CONTENT);
             return new FileResponse(response, request, file, start, contentSize);
         }
 
