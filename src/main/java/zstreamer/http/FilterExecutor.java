@@ -34,6 +34,10 @@ public class FilterExecutor extends ChannelDuplexHandler {
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+        if (!(msg instanceof WrappedHead)){
+            ctx.fireChannelRead(msg);
+            return;
+        }
         //获取所有的filter并执行它们的handleIn
         List<UrlClassTier.ClassInfo<AbstractHttpFilter>> filterInfo = ((WrappedHead) msg).getFilterInfo();
         for (UrlClassTier.ClassInfo<AbstractHttpFilter> info : filterInfo) {

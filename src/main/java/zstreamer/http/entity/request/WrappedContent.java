@@ -28,22 +28,26 @@ public class WrappedContent extends WrappedRequest implements ReferenceCounted {
 
     @Override
     public ReferenceCounted retain() {
-        return convenientDelegate.retain();
+        convenientDelegate.retain();
+        return this;
     }
 
     @Override
     public ReferenceCounted retain(int increment) {
-        return convenientDelegate.retain(increment);
+        convenientDelegate.retain(increment);
+        return this;
     }
 
     @Override
     public ReferenceCounted touch() {
-        return convenientDelegate.touch();
+        convenientDelegate.touch();
+        return this;
     }
 
     @Override
     public ReferenceCounted touch(Object hint) {
-        return convenientDelegate.touch(hint);
+        convenientDelegate.touch(hint);
+        return this;
     }
 
     @Override

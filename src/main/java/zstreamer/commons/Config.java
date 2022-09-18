@@ -26,7 +26,7 @@ public class Config {
      */
     public static final int BYTE_OUT_PER_SECOND = 0;
     public static final int BYTE_IN_PER_SECOND = 0;
-    public static final int CHECK_INTERVAL = 1024 * 1024;
+    public static final int CHECK_INTERVAL = 1000;
 
     /**
      * 文件分片传输时的分片大小

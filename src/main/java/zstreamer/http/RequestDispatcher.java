@@ -23,7 +23,7 @@ public class RequestDispatcher extends SimpleChannelInboundHandler<WrappedReques
     private static final RequestDispatcher INSTANCE = new RequestDispatcher();
 
     private RequestDispatcher() {
-
+        super(false);
     }
 
     public static RequestDispatcher getInstance() {

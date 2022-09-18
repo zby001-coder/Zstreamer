@@ -30,6 +30,7 @@ public class RequestResolver extends SimpleChannelInboundHandler<HttpObject> {
     private static final RequestResolver INSTANCE = new RequestResolver();
 
     private RequestResolver() {
+        super(false);
     }
 
     public static RequestResolver getInstance() {
@@ -82,7 +83,6 @@ public class RequestResolver extends SimpleChannelInboundHandler<HttpObject> {
             if (msg instanceof LastHttpContent) {
                 ctx.channel().config().setAutoRead(false);
             }
-            msg.retain();
             ctx.fireChannelRead(new WrappedContent(msg, contextHandler.getRequestInfo()));
         }
         //如果当前请求的state被置为disabled，就不处理下面的数据了
