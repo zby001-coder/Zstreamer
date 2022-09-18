@@ -39,6 +39,10 @@ public class ContextHandler extends ChannelDuplexHandler {
         handleRequest = false;
         requestInfo = null;
         ctx.write(msg, promise).addListener((future -> {
+            if (!future.isSuccess()){
+                //如果写失败了，把channel关掉
+                ctx.channel().close();
+            }
             //在这个响应写完之后，启动自动读取，因为不会混合响应了
             ctx.channel().config().setAutoRead(true);
             expireTime = System.currentTimeMillis() + Config.CONNECTION_MAX_IDLE_TIME;

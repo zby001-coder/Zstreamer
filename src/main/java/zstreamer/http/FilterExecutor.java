@@ -7,11 +7,13 @@ import io.netty.channel.ChannelPromise;
 import io.netty.util.ReferenceCountUtil;
 import zstreamer.commons.loader.UrlClassTier;
 import zstreamer.commons.util.InstanceTool;
+import zstreamer.http.entity.request.RequestInfo;
 import zstreamer.http.entity.request.WrappedHead;
 import zstreamer.http.entity.response.WrappedResponse;
 import zstreamer.http.filter.AbstractHttpFilter;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -50,9 +52,11 @@ public class FilterExecutor extends ChannelDuplexHandler {
     @Override
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
         //获取所有的filter并执行它们的handleOut
-        List<UrlClassTier.ClassInfo<AbstractHttpFilter>> filterInfo = ((WrappedResponse) msg).getRequestInfo().getFilterInfo();
-        if (filterInfo != null) {
-            for (UrlClassTier.ClassInfo<AbstractHttpFilter> info : filterInfo) {
+        Optional<List<UrlClassTier.ClassInfo<AbstractHttpFilter>>> filterInfos;
+        WrappedResponse response = (WrappedResponse) msg;
+        filterInfos = Optional.ofNullable(response).map(WrappedResponse::getRequestInfo).map(RequestInfo::getFilterInfo);
+        if (filterInfos.isPresent()) {
+            for (UrlClassTier.ClassInfo<AbstractHttpFilter> info : filterInfos.get()) {
                 AbstractHttpFilter filter = instanceFilter(info.getClz());
                 filter.handleOut((WrappedResponse) msg);
             }
